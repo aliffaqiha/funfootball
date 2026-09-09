@@ -1,0 +1,22 @@
+[
+  { "id": "ars", "name": "Arsenal", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "color": "#EF0107" },
+  { "id": "avl", "name": "Aston Villa", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "color": "#670E36" },
+  { "id": "atm", "name": "Atletico Madrid", "flag": "🇪🇸", "color": "#CB3524" },
+  { "id": "bar", "name": "Barcelona", "flag": "🇪🇸", "color": "#A50044" },
+  { "id": "bay", "name": "Bayern Munich", "flag": "🇩🇪", "color": "#DC052D" },
+  { "id": "bvb", "name": "Borussia Dortmund", "flag": "🇩🇪", "color": "#FDE100" },
+  { "id": "che", "name": "Chelsea", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "color": "#034694" },
+  { "id": "juv", "name": "Juventus", "flag": "🇮🇹", "color": "#000000" },
+  { "id": "liv", "name": "Liverpool", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "color": "#C8102E" },
+  { "id": "mci", "name": "Manchester City", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "color": "#6CABDD" },
+  { "id": "mun", "name": "Manchester United", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "color": "#DA291C" },
+  { "id": "int", "name": "Inter Milan", "flag": "🇮🇹", "color": "#0068A8" },
+  { "id": "mil", "name": "AC Milan", "flag": "🇮🇹", "color": "#FB090B" },
+  { "id": "psg", "name": "Paris Saint-Germain", "flag": "🇫🇷", "color": "#004170" },
+  { "id": "rma", "name": "Real Madrid", "flag": "🇪🇸", "color": "#FFFFFF" },
+  { "id": "sev", "name": "Sevilla", "flag": "🇪🇸", "color": "#D8121A" },
+  { "id": "tot", "name": "Tottenham Hotspur", "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "color": "#132257" },
+  { "id": "nap", "name": "Napoli", "flag": "🇮🇹", "color": "#12A0D7" },
+  { "id": "rsb", "name": "Red Bull Salzburg", "flag": "🇦🇹", "color": "#E4002B" },
+  { "id": "gal", "name": "Galatasaray", "flag": "🇹🇷", "color": "#FFB515" }
+]

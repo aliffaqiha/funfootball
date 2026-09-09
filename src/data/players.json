@@ -1,0 +1,279 @@
+[
+  {
+    "id": 1,
+    "firstName": "Lionel",
+    "lastName": "Messi",
+    "nationality": "Argentina",
+    "position": "Forward",
+    "flag": "🇦🇷",
+    "transfers": [
+      { "year": 2004, "club": "Barcelona" },
+      { "year": 2021, "club": "Paris Saint-Germain" },
+      { "year": 2023, "club": "Inter Miami" }
+    ]
+  },
+  {
+    "id": 2,
+    "firstName": "Cristiano",
+    "lastName": "Ronaldo",
+    "nationality": "Portugal",
+    "position": "Forward",
+    "flag": "🇵🇹",
+    "transfers": [
+      { "year": 2003, "club": "Manchester United" },
+      { "year": 2009, "club": "Real Madrid" },
+      { "year": 2018, "club": "Juventus" },
+      { "year": 2021, "club": "Manchester United" },
+      { "year": 2023, "club": "Al-Nassr" }
+    ]
+  },
+  {
+    "id": 3,
+    "firstName": "Kylian",
+    "lastName": "Mbappé",
+    "nationality": "France",
+    "position": "Forward",
+    "flag": "🇫🇷",
+    "transfers": [
+      { "year": 2016, "club": "AS Monaco" },
+      { "year": 2017, "club": "Paris Saint-Germain" },
+      { "year": 2024, "club": "Real Madrid" }
+    ]
+  },
+  {
+    "id": 4,
+    "firstName": "Neymar",
+    "lastName": "Jr",
+    "nationality": "Brazil",
+    "position": "Forward",
+    "flag": "🇧🇷",
+    "transfers": [
+      { "year": 2009, "club": "Santos" },
+      { "year": 2013, "club": "Barcelona" },
+      { "year": 2017, "club": "Paris Saint-Germain" },
+      { "year": 2023, "club": "Al-Hilal" }
+    ]
+  },
+  {
+    "id": 5,
+    "firstName": "Luka",
+    "lastName": "Modrić",
+    "nationality": "Croatia",
+    "position": "Midfielder",
+    "flag": "🇭🇷",
+    "transfers": [
+      { "year": 2003, "club": "Dinamo Zagreb" },
+      { "year": 2008, "club": "Tottenham Hotspur" },
+      { "year": 2012, "club": "Real Madrid" }
+    ]
+  },
+  {
+    "id": 6,
+    "firstName": "N'Golo",
+    "lastName": "Kanté",
+    "nationality": "France",
+    "position": "Midfielder",
+    "flag": "🇫🇷",
+    "transfers": [
+      { "year": 2012, "club": "Boulogne" },
+      { "year": 2013, "club": "Caen" },
+      { "year": 2015, "club": "Leicester City" },
+      { "year": 2016, "club": "Chelsea" },
+      { "year": 2023, "club": "Al-Ittihad" }
+    ]
+  },
+  {
+    "id": 7,
+    "firstName": "Mohamed",
+    "lastName": "Salah",
+    "nationality": "Egypt",
+    "position": "Forward",
+    "flag": "🇪🇬",
+    "transfers": [
+      { "year": 2012, "club": "Basel" },
+      { "year": 2014, "club": "Chelsea" },
+      { "year": 2015, "club": "Fiorentina" },
+      { "year": 2016, "club": "AS Roma" },
+      { "year": 2017, "club": "Liverpool" }
+    ]
+  },
+  {
+    "id": 8,
+    "firstName": "Kevin",
+    "lastName": "De Bruyne",
+    "nationality": "Belgium",
+    "position": "Midfielder",
+    "flag": "🇧🇪",
+    "transfers": [
+      { "year": 2012, "club": "Chelsea" },
+      { "year": 2014, "club": "VfL Wolfsburg" },
+      { "year": 2015, "club": "Manchester City" }
+    ]
+  },
+  {
+    "id": 9,
+    "firstName": "Sergio",
+    "lastName": "Ramos",
+    "nationality": "Spain",
+    "position": "Defender",
+    "flag": "🇪🇸",
+    "transfers": [
+      { "year": 2004, "club": "Sevilla" },
+      { "year": 2005, "club": "Real Madrid" },
+      { "year": 2021, "club": "Paris Saint-Germain" },
+      { "year": 2023, "club": "Sevilla" }
+    ]
+  },
+  {
+    "id": 10,
+    "firstName": "Robert",
+    "lastName": "Lewandowski",
+    "nationality": "Poland",
+    "position": "Forward",
+    "flag": "🇵🇱",
+    "transfers": [
+      { "year": 2010, "club": "Borussia Dortmund" },
+      { "year": 2014, "club": "Bayern Munich" },
+      { "year": 2022, "club": "Barcelona" }
+    ]
+  },
+  {
+    "id": 11,
+    "firstName": "Erling",
+    "lastName": "Haaland",
+    "nationality": "Norway",
+    "position": "Forward",
+    "flag": "🇳🇴",
+    "transfers": [
+      { "year": 2017, "club": "Bryne" },
+      { "year": 2019, "club": "Molde" },
+      { "year": 2020, "club": "Borussia Dortmund" },
+      { "year": 2022, "club": "Manchester City" }
+    ]
+  },
+  {
+    "id": 12,
+    "firstName": "Carlos",
+    "lastName": "Medel",
+    "nationality": "Chile",
+    "position": "Defender",
+    "flag": "🇨🇱",
+    "transfers": [
+      { "year": 2006, "club": "Universidad Católica" },
+      { "year": 2009, "club": "Boca Juniors" },
+      { "year": 2011, "club": "Sevilla" },
+      { "year": 2014, "club": "Inter Milan" },
+      { "year": 2017, "club": "Beşiktaş" }
+    ]
+  },
+  {
+    "id": 13,
+    "firstName": "Harry",
+    "lastName": "Kane",
+    "nationality": "England",
+    "position": "Forward",
+    "flag": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+    "transfers": [
+      { "year": 2013, "club": "Tottenham Hotspur" },
+      { "year": 2023, "club": "Bayern Munich" }
+    ]
+  },
+  {
+    "id": 14,
+    "firstName": "Gareth",
+    "lastName": "Bale",
+    "nationality": "Wales",
+    "position": "Forward",
+    "flag": "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
+    "transfers": [
+      { "year": 2007, "club": "Southampton" },
+      { "year": 2007, "club": "Tottenham Hotspur" },
+      { "year": 2013, "club": "Real Madrid" },
+      { "year": 2020, "club": "Tottenham Hotspur" },
+      { "year": 2022, "club": "Los Angeles FC" }
+    ]
+  },
+  {
+    "id": 15,
+    "firstName": "Sadio",
+    "lastName": "Mané",
+    "nationality": "Senegal",
+    "position": "Forward",
+    "flag": "🇸🇳",
+    "transfers": [
+      { "year": 2011, "club": "FC Metz" },
+      { "year": 2014, "club": "Red Bull Salzburg" },
+      { "year": 2016, "club": "Southampton" },
+      { "year": 2016, "club": "Liverpool" },
+      { "year": 2022, "club": "Bayern Munich" }
+    ]
+  },
+  {
+    "id": 16,
+    "firstName": "David",
+    "lastName": "Alaba",
+    "nationality": "Austria",
+    "position": "Defender",
+    "flag": "🇦🇹",
+    "transfers": [
+      { "year": 2009, "club": "Bayern Munich" },
+      { "year": 2021, "club": "Real Madrid" }
+    ]
+  },
+  {
+    "id": 17,
+    "firstName": "Paul",
+    "lastName": "Pogba",
+    "nationality": "France",
+    "position": "Midfielder",
+    "flag": "🇫🇷",
+    "transfers": [
+      { "year": 2011, "club": "Manchester United" },
+      { "year": 2012, "club": "Juventus" },
+      { "year": 2016, "club": "Manchester United" },
+      { "year": 2022, "club": "Juventus" }
+    ]
+  },
+  {
+    "id": 18,
+    "firstName": "Zlatan",
+    "lastName": "Ibrahimović",
+    "nationality": "Sweden",
+    "position": "Forward",
+    "flag": "🇸🇪",
+    "transfers": [
+      { "year": 2004, "club": "Juventus" },
+      { "year": 2006, "club": "Inter Milan" },
+      { "year": 2009, "club": "Barcelona" },
+      { "year": 2010, "club": "AC Milan" },
+      { "year": 2012, "club": "Paris Saint-Germain" }
+    ]
+  },
+  {
+    "id": 19,
+    "firstName": "Thiago",
+    "lastName": "Silva",
+    "nationality": "Brazil",
+    "position": "Defender",
+    "flag": "🇧🇷",
+    "transfers": [
+      { "year": 2006, "club": "Fluminense" },
+      { "year": 2009, "club": "AC Milan" },
+      { "year": 2012, "club": "Paris Saint-Germain" },
+      { "year": 2020, "club": "Chelsea" }
+    ]
+  },
+  {
+    "id": 20,
+    "firstName": "Bambang",
+    "lastName": "Pamungkas",
+    "nationality": "Indonesia",
+    "position": "Forward",
+    "flag": "🇮🇩",
+    "transfers": [
+      { "year": 2000, "club": "Persija Jakarta" },
+      { "year": 2005, "club": "Selangor" },
+      { "year": 2007, "club": "Persija Jakarta" }
+    ]
+  }
+]

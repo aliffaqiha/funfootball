@@ -1,0 +1,177 @@
+[
+  {
+    "id": 1,
+    "category": "General",
+    "question": "Negara mana yang paling banyak memenangkan Piala Dunia FIFA?",
+    "options": ["Jerman", "Italia", "Brasil", "Argentina"],
+    "answer": "Brasil"
+  },
+  {
+    "id": 2,
+    "category": "General",
+    "question": "Siapa pemain dengan trofi Ballon d'Or terbanyak sepanjang sejarah?",
+    "options": ["Cristiano Ronaldo", "Lionel Messi", "Michel Platini", "Johan Cruyff"],
+    "answer": "Lionel Messi"
+  },
+  {
+    "id": 3,
+    "category": "General",
+    "question": "Berapa lama durasi normal satu pertandingan sepak bola?",
+    "options": ["80 menit", "90 menit", "100 menit", "75 menit"],
+    "answer": "90 menit"
+  },
+  {
+    "id": 4,
+    "category": "General",
+    "question": "Klub mana yang bermarkas di Old Trafford?",
+    "options": ["Liverpool", "Arsenal", "Manchester City", "Manchester United"],
+    "answer": "Manchester United"
+  },
+  {
+    "id": 5,
+    "category": "General",
+    "question": "Siapa top skorer sepanjang masa Timnas Indonesia?",
+    "options": ["Bambang Pamungkas", "Boaz Solossa", "Irfan Bachdim", "Cristian Gonzales"],
+    "answer": "Cristian Gonzales"
+  },
+  {
+    "id": 6,
+    "category": "General",
+    "question": "Bendera negara mana yang memiliki warna oranye sebagai warna nasional sepak bolanya?",
+    "options": ["Belanda", "Prancis", "Spanyol", "Portugal"],
+    "answer": "Belanda"
+  },
+  {
+    "id": 7,
+    "category": "General",
+    "question": "Liga mana yang dijuluki 'La Liga'?",
+    "options": ["Liga Jerman", "Liga Italia", "Liga Spanyol", "Liga Prancis"],
+    "answer": "Liga Spanyol"
+  },
+  {
+    "id": 8,
+    "category": "General",
+    "question": "Berapa banyak pemain dalam satu tim di lapangan pada saat yang sama?",
+    "options": ["9", "10", "11", "12"],
+    "answer": "11"
+  },
+  {
+    "id": 9,
+    "category": "Medium",
+    "question": "Siapa pelatih yang membawa Inggris meraih gelar Piala Dunia 1966?",
+    "options": ["Bobby Robson", "Alf Ramsey", "Terry Venables", "Glenn Hoddle"],
+    "answer": "Alf Ramsey"
+  },
+  {
+    "id": 10,
+    "category": "Medium",
+    "question": "Klub mana yang dijuluki 'Los Blancos'?",
+    "options": ["Barcelona", "Atletico Madrid", "Real Madrid", "Sevilla"],
+    "answer": "Real Madrid"
+  },
+  {
+    "id": 11,
+    "category": "Medium",
+    "question": "Siapa kiper Jerman yang terkenal dengan sebutan 'Der Titan'?",
+    "options": ["Manuel Neuer", "Jens Lehmann", "Oliver Kahn", "Marc-Andre ter Stegen"],
+    "answer": "Oliver Kahn"
+  },
+  {
+    "id": 12,
+    "category": "Medium",
+    "question": "Final Piala Dunia mana yang dijuluki 'Pertandingan Abad Ini' (1970)?",
+    "options": ["Brasil vs Italia", "Jerman vs Belanda", "Argentina vs Prancis", "Brasil vs Jerman"],
+    "answer": "Brasil vs Italia"
+  },
+  {
+    "id": 13,
+    "category": "Medium",
+    "question": "Siapa pencetak gol 'Hand of God' yang terkenal pada Piala Dunia 1986?",
+    "options": ["Zinedine Zidane", "Maradona", "Pele", "Ronaldo Nazario"],
+    "answer": "Maradona"
+  },
+  {
+    "id": 14,
+    "category": "Medium",
+    "question": "Klub mana yang pertama kali memenangkan Liga Champions setelah era Liga Champions UEFA (1992)?",
+    "options": ["AC Milan", "Barcelona", "Olympique Marseille", "Ajax"],
+    "answer": "Olympique Marseille"
+  },
+  {
+    "id": 15,
+    "category": "Medium",
+    "question": "Stadion Wembley berlokasi di kota mana?",
+    "options": ["Manchester", "Liverpool", "London", "Birmingham"],
+    "answer": "London"
+  },
+  {
+    "id": 16,
+    "category": "Medium",
+    "question": "Siapa pemain termuda yang mencetak gol di Piala Dunia?",
+    "options": ["Kylian Mbappe", "Pele", "Michael Owen", "Lionel Messi"],
+    "answer": "Pele"
+  },
+  {
+    "id": 17,
+    "category": "Hard",
+    "question": "Klub manakah yang memenangkan treble pertama Premier League, FA Cup, dan Liga Champions pada 1999?",
+    "options": ["Chelsea", "Arsenal", "Manchester United", "Liverpool"],
+    "answer": "Manchester United"
+  },
+  {
+    "id": 18,
+    "category": "Hard",
+    "question": "Siapa pelatih yang memenangkan Champions League dengan dua klub berbeda (Real Madrid & AC Milan)?",
+    "options": ["Carlo Ancelotti", "Pep Guardiola", "Jose Mourinho", "Jurgen Klopp"],
+    "answer": "Carlo Ancelotti"
+  },
+  {
+    "id": 19,
+    "category": "Hard",
+    "question": "Berapa total gol yang dicetak Just Fontaine di Piala Dunia 1958 (rekor terbanyak satu turnamen)?",
+    "options": ["11", "13", "15", "9"],
+    "answer": "13"
+  },
+  {
+    "id": 20,
+    "category": "Hard",
+    "question": "Siapa pemain termuda yang bermain di Piala Dunia?",
+    "options": ["Norman Whiteside", "Pele", "Souleymane Mamam", "Theo Walcott"],
+    "answer": "Souleymane Mamam"
+  },
+  {
+    "id": 21,
+    "category": "Hard",
+    "question": "Klub Asia pertama yang lolos ke final Piala Dunia Antarklub FIFA?",
+    "options": ["Al-Hilal", "Urawa Red Diamonds", "Kashima Antlers", "Al-Ain"],
+    "answer": "Kashima Antlers"
+  },
+  {
+    "id": 22,
+    "category": "Hard",
+    "question": "Siapa top skorer sepanjang sejarah Piala Dunia (dengan 16 gol)?",
+    "options": ["Ronaldo Nazario", "Miroslav Klose", "Gerd Muller", "Lionel Messi"],
+    "answer": "Miroslav Klose"
+  },
+  {
+    "id": 23,
+    "category": "Hard",
+    "question": "Pemain pertama yang mencetak gol di lima Piala Dunia berbeda?",
+    "options": ["Pele", "Cristiano Ronaldo", "Lionel Messi", "Uwe Seeler"],
+    "answer": "Cristiano Ronaldo"
+  },
+  {
+    "id": 24,
+    "category": "Hard",
+    "question": "Klub mana yang meraih rekor 121 gol dalam satu musim La Liga?",
+    "options": ["Barcelona", "Real Madrid", "Atletico Madrid", "Valencia"],
+    "answer": "Real Madrid"
+  },
+  {
+    "id": 25,
+    "category": "General",
+    "question": "Apa warna kartu untuk pelanggaran keras (red card)?",
+    "options": ["Kuning", "Merah", "Biru", "Hitam"],
+    "answer": "Merah"
+  }
+]
