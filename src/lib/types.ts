@@ -24,6 +24,9 @@ export interface PoolClub {
 }
 
 export interface GachaPool {
-  countries: PoolCountry[];
+  /** Tahun (musim) yang tersedia untuk gacha — pemain yang tercatat di klub pada tahun itu */
+  years: number[];
   clubs: PoolClub[];
+  /** Tahun valid per klub (id pool club -> tahun yang punya 4 posisi) */
+  yearsByClub?: Record<string, number[]>;
 }

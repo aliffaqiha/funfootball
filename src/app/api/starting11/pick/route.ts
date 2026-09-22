@@ -11,7 +11,7 @@ export interface PickNominee {
   role: "GK" | "DEF" | "MID" | "FWD";
   label: string;
   name: string;
-  from: "exact" | "club" | "country" | "any";
+  from: "exact" | "club";
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -27,29 +27,34 @@ async function pickOne(
   role: "GK" | "DEF" | "MID" | "FWD",
   pos: string,
   clubId: string,
-  countryId: string | null
+  year: number | null
 ): Promise<{ name: string; from: PickNominee["from"] } | null> {
-  const baseWhere = { position: pos, name: { not: "Unknown Player" } };
-
-  const pools: Array<{ where: Record<string, unknown>; from: PickNominee["from"] }> = [
-    ...(countryId ? [{ where: { ...baseWhere, clubId, countryId }, from: "exact" as const }] : []),
-    { where: { ...baseWhere, clubId }, from: "club" },
-    ...(countryId
-      ? [{ where: { ...baseWhere, countryId, club: { isStarting11: true } }, from: "country" as const }]
-      : []),
-    { where: { ...baseWhere }, from: "any" },
-  ];
-
-  for (const p of pools) {
-    const rows = await db.player.findMany({
-      where: p.where,
+  if (year) {
+    const rows = await db.stint.findMany({
+      where: {
+        clubId,
+        position: pos,
+        fromYear: { lte: year },
+        toYear: { gte: year },
+        name: { notIn: ["", "Unknown Player"] },
+      },
       select: { name: true },
+      distinct: ["name"],
       take: 60,
     });
     if (rows.length > 0) {
-      const chosen = shuffle(rows)[0];
-      return { name: chosen.name, from: p.from };
+      return { name: shuffle(rows)[0].name, from: "exact" };
     }
+    return null;
+  }
+
+  const rows = await db.player.findMany({
+    where: { clubId, position: pos, name: { not: "Unknown Player" } },
+    select: { name: true },
+    take: 60,
+  });
+  if (rows.length > 0) {
+    return { name: shuffle(rows)[0].name, from: "club" };
   }
   return null;
 }
@@ -57,7 +62,9 @@ async function pickOne(
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const clubParam = url.searchParams.get("club");
-  const countryParam = url.searchParams.get("country");
+  const yearParam = url.searchParams.get("year");
+  const year = yearParam ? Number(yearParam) : null;
+  const yearValid = year !== null && Number.isFinite(year);
 
   if (!clubParam) {
     return Response.json({ error: "Parameter club wajib diisi" }, { status: 400 });
@@ -70,8 +77,6 @@ export async function GET(request: Request) {
       name: true,
       flag: true,
       key: true,
-      countryId: true,
-      country: { select: { iso3: true, name: true, flag: true } },
     },
   });
 
@@ -79,19 +84,14 @@ export async function GET(request: Request) {
     return Response.json({ error: "Klub tidak ditemukan" }, { status: 404 });
   }
 
-  const country = countryParam
-    ? await db.country.findFirst({ where: { iso3: countryParam } })
-    : null;
-  const countryId = country?.id ?? club.countryId;
-
   const nominees: PickNominee[] = [];
   for (const r of ROLES) {
-    const picked = await pickOne(r.role, r.pos, club.id, countryId);
+    const picked = await pickOne(r.role, r.pos, club.id, yearValid ? year : null);
     nominees.push({
       role: r.role,
       label: r.label,
       name: picked?.name ?? "",
-      from: picked?.from ?? "any",
+      from: picked?.from ?? (yearValid ? "exact" : "club"),
     });
   }
 
@@ -102,11 +102,7 @@ export async function GET(request: Request) {
       flag: club.flag,
       key: club.key,
     },
-    country: country
-      ? { code: country.iso3, name: country.name, flag: country.flag }
-      : club.country
-      ? { code: club.country.iso3, name: club.country.name, flag: club.country.flag }
-      : null,
+    year: yearValid ? year : null,
     nominees,
   });
 }

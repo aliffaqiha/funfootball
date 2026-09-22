@@ -9,6 +9,7 @@ interface GachaModalProps {
   open: boolean;
   phase: "spin" | "done";
   result: PoolClub | null;
+  year: number | null;
   title?: string;
   pool: GachaPool;
 }
@@ -121,19 +122,14 @@ function Reel({
   );
 }
 
-export default function GachaModal({ open, phase, result, title, pool }: GachaModalProps) {
-  const countryByCode = useMemo(
-    () => Object.fromEntries(pool.countries.map((c) => [c.code, c.name])),
-    [pool.countries]
-  );
-  const countryNames = useMemo(() => pool.countries.map((c) => c.name), [pool.countries]);
+export default function GachaModal({ open, phase, result, year, title, pool }: GachaModalProps) {
+  const yearNames = useMemo(() => pool.years.map((y) => String(y)), [pool.years]);
   const clubNames = useMemo(() => pool.clubs.map((c) => c.name), [pool.clubs]);
 
-  const country = result ? (countryByCode[result.country] ?? result.name) : null;
-  const countryIndex = country ? countryNames.indexOf(country) : null;
+  const yearIndex = year != null ? yearNames.indexOf(String(year)) : null;
   const clubIndex = result ? clubNames.indexOf(result.name) : null;
 
-  // Sequential reveal: country stops first, then the club reel enters with its own gacha animation.
+  // Sequential reveal: year stops first, then the club reel enters with its own gacha animation.
   const [clubStage, setClubStage] = useState<"wait" | "spin" | "settle">("wait");
 
   useEffect(() => {
@@ -187,17 +183,17 @@ export default function GachaModal({ open, phase, result, title, pool }: GachaMo
         {/* two reels side by side — same place in every phase */}
         <div className="flex-1 flex items-center justify-center px-6 sm:px-24 min-h-0">
           <div className="flex items-center gap-8 sm:gap-20 min-w-0">
-            {/* NEGARA */}
+            {/* TAHUN */}
             <div className="flex flex-col items-center min-w-0">
               <span className="text-[11px] sm:text-sm uppercase tracking-[0.6em] text-white/30 font-black">
-                Negara
+                Tahun
               </span>
               <div className="mt-6 sm:mt-8 w-full flex justify-center min-w-0">
                 <Reel
-                  texts={countryNames}
+                  texts={yearNames}
                   phase={phase}
-                  winnerIndex={phase === "done" ? countryIndex : null}
-                  winnerText={country ?? undefined}
+                  winnerIndex={phase === "done" ? yearIndex : null}
+                  winnerText={year != null ? String(year) : undefined}
                   winnerColor={phase === "done" ? "#4ade80" : undefined}
                 />
               </div>
