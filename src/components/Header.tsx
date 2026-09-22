@@ -16,7 +16,8 @@ import {
   Gamepad2,
 } from "lucide-react";
 import { useKeyboardShortcuts } from "@/lib/useKeyboard";
-import { setMuted, initSound } from "@/lib/sound";
+import { setMuted } from "@/lib/sound";
+import { useMuted } from "@/lib/useMuted";
 import type { GameMode, GameModeOrHome } from "@/lib/types";
 
 interface HeaderProps {
@@ -43,16 +44,13 @@ export default function Header({
   gameKey,
   onResetGame,
 }: HeaderProps) {
-  const [muted, setMutedState] = useState(() => initSound());
+  const muted = useMuted();
   const [menuOpen, setMenuOpen] = useState(false);
   const line1 = useRef<HTMLSpanElement>(null);
   const line2 = useRef<HTMLSpanElement>(null);
 
   const toggleMute = () => {
-    setMutedState((m) => {
-      setMuted(!m);
-      return !m;
-    });
+    setMuted(!muted);
   };
 
   const toggleFullscreen = () => {

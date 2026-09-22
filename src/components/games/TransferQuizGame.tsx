@@ -158,7 +158,6 @@ export default function TransferQuizGame() {
             transition={{ type: "spring", stiffness: 200, damping: 16 }}
             className="mt-8 text-center bg-green-500/15 border-2 border-green-400 rounded-2xl py-10 px-6"
           >
-            <div className="text-4xl mb-2">{player.flag}</div>
             <div className="text-4xl md:text-6xl font-black text-slate-50">
               {player.firstName} {player.lastName}
             </div>

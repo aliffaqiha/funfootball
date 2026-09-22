@@ -1,13 +1,29 @@
 "use client";
 
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, X, UserPlus, Sparkles, ChevronDown } from "lucide-react";
-import clubs from "@/data/clubs-nations.json";
+import { Trophy, X, Sparkles, ChevronDown, Loader2, RefreshCw, ShieldAlert, Dices } from "lucide-react";
+import staticPool from "@/data/starting11-pool.json";
 import { playCorrect, playSpin } from "@/lib/sound";
 import GachaSlot from "@/components/ui/GachaSlot";
 import GachaModal from "@/components/ui/GachaModal";
 import Button from "@/components/ui/Button";
+import type { GachaPool, PoolClub } from "@/lib/types";
+
+const STATIC_POOL: GachaPool = staticPool;
+
+interface PickNominee {
+  role: "GK" | "DEF" | "MID" | "FWD";
+  label: string;
+  name: string;
+  from: "exact" | "club" | "country" | "any";
+}
+
+interface PickResponse {
+  club: { id: string; name: string; flag: string | null; key: string };
+  country: { code: string; name: string; flag: string | null } | null;
+  nominees: PickNominee[];
+}
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                      */
@@ -191,6 +207,10 @@ const CLUB_SHORT: Record<string, string> = {
   "Inter Milan": "INT", "AC Milan": "MIL", "Tottenham Hotspur": "TOT",
   "Sevilla": "SEV", "Napoli": "NAP", "Red Bull Salzburg": "RSB",
   "Galatasaray": "GAL", "Aston Villa": "AVL",
+  "Ajax": "AJA", "Benfica": "BEN", "Porto": "POR", "AS Roma": "ROM",
+  "Marseille": "MAR", "AS Monaco": "MON", "Bayer Leverkusen": "LEV",
+  "RB Leipzig": "RBL", "Newcastle United": "NEW", "Fenerbahçe": "FEN",
+  "Flamengo": "FLA", "River Plate": "RIV",
 };
 
 function clubLabel(name: string): string {
@@ -222,8 +242,10 @@ export default function Starting11Game() {
 
   const [data, setData] = useState<Record<string, { clubId: string | null; name: string }>>({});
   const [spinning, setSpinning] = useState<Record<string, boolean>>({});
-  const [pickerFor, setPickerFor] = useState<string | null>(null);
-  const [pickerName, setPickerName] = useState("");
+  const [pickSlot, setPickSlot] = useState<string | null>(null);
+  const [nomineesBySlot, setNomineesBySlot] = useState<Record<string, PickNominee[]>>({});
+  const [picking, setPicking] = useState(false);
+  const [pickErr, setPickErr] = useState(false);
   const [lineup, setLineup] = useState<string[]>(() => FORMATIONS[0].positions.map((p) => p.id));
   const pitchRef = useRef<HTMLDivElement | null>(null);
 
@@ -317,23 +339,52 @@ export default function Starting11Game() {
   const [gacha, setGacha] = useState<{
     slotId: string;
     phase: "spin" | "done";
-    result: (typeof clubs)[number] | null;
+    result: PoolClub | null;
   } | null>(null);
 
-  const spin = useCallback((slotId: string) => {
-    setSpinning((p) => ({ ...p, [slotId]: true }));
-    playSpin();
-    setTimeout(() => {
-      const club = clubs[Math.floor(Math.random() * clubs.length)];
-      setData((p) => ({
-        ...p,
-        [slotId]: { clubId: club.id, name: (p[slotId]?.name || "").trim() || "Pemain ?" },
-      }));
-      setSpinning((p) => ({ ...p, [slotId]: false }));
-    }, 1600);
+  const [pool, setPool] = useState<GachaPool>(STATIC_POOL);
+  const clubs = pool.clubs;
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/starting11")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("failed"))))
+      .then((d: GachaPool) => {
+        if (active && d && d.clubs && d.clubs.length > 0 && d.countries && d.countries.length > 0) {
+          setPool(d);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
   }, []);
 
-  // gacha with full slot-machine modal (single slot click)
+  const fetchNominees = useCallback(async (slotId: string) => {
+    const clubId = get(slotId).clubId;
+    if (!clubId) return;
+    setPicking(true);
+    setPickErr(false);
+    try {
+      const res = await fetch(`/api/starting11/pick?club=${encodeURIComponent(clubId)}`);
+      if (!res.ok) throw new Error("failed");
+      const d: PickResponse = await res.json();
+      if (Array.isArray(d.nominees)) {
+        setNomineesBySlot((p) => ({ ...p, [slotId]: d.nominees }));
+      }
+    } catch {
+      setPickErr(true);
+    } finally {
+      setPicking(false);
+    }
+  }, [get]);
+
+  const openPicker = useCallback((slotId: string) => {
+    setPickSlot(slotId);
+    void fetchNominees(slotId);
+  }, [fetchNominees]);
+
+  // gacha dengan modal slot-machine penuh (dipicu dari tombol independen)
   const startGacha = useCallback((slotId: string) => {
     playSpin();
     setGacha({ slotId, phase: "spin", result: null });
@@ -342,35 +393,33 @@ export default function Starting11Game() {
       const club = clubs[Math.floor(Math.random() * clubs.length)];
       setData((p) => ({
         ...p,
-        [slotId]: { clubId: club.id, name: (p[slotId]?.name || "").trim() || "Pemain ?" },
+        [slotId]: { clubId: club.id, name: "" },
       }));
       setSpinning((p) => ({ ...p, [slotId]: false }));
       setGacha({ slotId, phase: "done", result: club });
       playCorrect();
-      setTimeout(() => setGacha(null), 3000);
+      setTimeout(() => {
+        setGacha(null);
+        openPicker(slotId);
+      }, 4200);
     }, 2600);
-  }, []);
+  }, [clubs, openPicker]);
 
-  const spinAll = () => {
-    lineup.forEach((id) => {
-      if (!get(id).clubId) spin(id);
-    });
+  // 1 tombol gacha independen — isi 1 slot kosong secara acak
+  const gachaNext = () => {
+    const empty = lineup.filter((id) => !get(id).clubId);
+    if (empty.length === 0) return;
+    const slotId = empty[Math.floor(Math.random() * empty.length)];
+    startGacha(slotId);
   };
 
-  const openPicker = (slotId: string) => {
-    setPickerFor(slotId);
-    const g = get(slotId);
-    setPickerName(g.name === "Pemain ?" ? "" : g.name);
-  };
-
-  const assignName = () => {
-    if (!pickerFor) return;
+  const pickNominee = (slotId: string, nominee: PickNominee) => {
+    if (!nominee.name) return;
     setData((p) => ({
       ...p,
-      [pickerFor]: { ...get(pickerFor), name: pickerName.trim() || "Pemain ?" },
+      [slotId]: { clubId: p[slotId]?.clubId ?? null, name: nominee.name },
     }));
-    setPickerFor(null);
-    setPickerName("");
+    setPickSlot(null);
     playCorrect();
   };
 
@@ -378,6 +427,8 @@ export default function Starting11Game() {
     setData({});
     setSpinning({});
     setGacha(null);
+    setPickSlot(null);
+    setNomineesBySlot({});
     setLineup(formation.positions.map((p) => p.id));
   };
 
@@ -387,6 +438,8 @@ export default function Starting11Game() {
     setData({});
     setSpinning({});
     setGacha(null);
+    setPickSlot(null);
+    setNomineesBySlot({});
     setLineup(FORMATIONS.find((f) => f.id === id)?.positions.map((p) => p.id) ?? []);
   };
 
@@ -399,10 +452,16 @@ export default function Starting11Game() {
         <h2 className="text-xl md:text-2xl font-black text-slate-100 flex items-center gap-2">
           <Trophy className="text-green-400" /> Starting 11
         </h2>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="text-slate-400 font-bold text-sm">
             {filledCount} / 11 pemain
           </span>
+          <Button size="sm" onClick={gachaNext} disabled={filledCount >= 11}>
+            <Dices size={16} /> Gacha Pemain
+          </Button>
+          <Button size="sm" variant="danger" onClick={resetAll}>
+            <X size={16} /> Reset
+          </Button>
           <div className="relative">
             <button
               onClick={() => setFormationOpen((o) => !o)}
@@ -514,51 +573,69 @@ export default function Starting11Game() {
                     onClick={() => {
                       if (draggedRef.current) return;
                       if (hasData) openPicker(playerId);
-                      else startGacha(playerId);
                     }}
                     onPointerDown={(e) => onPointerDownSlot(e, i)}
                     onPointerMove={onPointerMoveSlot}
                     onPointerUp={onPointerUpSlot}
                     onPointerCancel={onPointerUpSlot}
-                    className="cursor-grab active:cursor-grabbing group relative flex items-center justify-center touch-none select-none"
+                    className="group flex flex-col items-center cursor-grab active:cursor-grabbing touch-none select-none"
                   >
+                    {/* role tag */}
                     <span
-                      className="absolute -top-2 left-1/2 -translate-x-1/2 text-[8px] font-black px-1 py-[1px] rounded leading-none z-10"
-                      style={{ backgroundColor: color, color: "#000" }}
+                      className="mb-1 px-1.5 py-[3px] rounded-full text-[8px] font-black leading-none z-10 shadow-lg"
+                      style={{ backgroundColor: color, color: "#0f172a", boxShadow: `0 0 10px ${color}50` }}
                     >
                       {slotDef.label}
                     </span>
+
                     <div
-                      className="relative flex flex-col items-center justify-center rounded-xl border-[2.5px] bg-slate-950/85 transition-all duration-200 w-[52px] h-[52px] sm:w-[56px] sm:h-[56px] group-hover:scale-110 group-hover:z-20 group-hover:shadow-xl"
-                      style={{ borderColor: color, boxShadow: `0 0 16px ${color}20` }}
+                      className="relative flex flex-col items-center overflow-hidden rounded-xl border-[2.5px] transition-all duration-200 w-[60px] h-[66px] sm:w-[66px] sm:h-[72px] group-hover:scale-110 group-hover:z-20 group-hover:shadow-xl"
+                      style={{
+                        borderColor: color,
+                        background: hasData ? `linear-gradient(180deg, ${color}2b 0%, rgba(2,6,23,0.92) 60%)` : "rgba(2,6,23,0.85)",
+                        boxShadow: hasData ? `0 0 18px ${color}35, inset 0 0 0 rgba(0,0,0,0)` : `0 0 10px ${color}18`,
+                      }}
                     >
                       {isSpinning ? (
-                        <GachaSlot
-                          spinning
-                          items={clubs.map((c) => c.name)}
-                          result={null}
-                          renderItem={(item) => (
-                            <span className="text-[10px] font-bold text-white">{clubLabel(String(item))}</span>
-                          )}
-                          size={34}
-                        />
+                        <div className="flex items-center justify-center h-full">
+                          <GachaSlot
+                            spinning
+                            items={clubs.map((c) => c.name)}
+                            result={null}
+                            renderItem={(item) => (
+                              <span className="text-[10px] font-bold text-white">{clubLabel(String(item))}</span>
+                            )}
+                            size={38}
+                          />
+                        </div>
                       ) : hasData ? (
                         <>
-                          <span className="text-base leading-none">{club?.flag}</span>
-                          <span className="text-[8px] font-black mt-px leading-none sm:text-[9px]" style={{ color }}>
-                            {clubLabel(club?.name || "")}
-                          </span>
-                          <span className="text-[9px] font-bold text-slate-200 truncate max-w-[52px] leading-tight sm:text-[10px]">
-                            {playerState.name || "Pemain ?"}
-                          </span>
+                          <div className="relative z-10 flex items-center justify-center gap-1 px-1 mt-2 w-full">
+                            <span
+                              className="text-[8px] font-black leading-none tracking-wide rounded px-1 py-[2px]"
+                              style={{ backgroundColor: color, color: "#0f172a" }}
+                            >
+                              {clubLabel(club?.name || "")}
+                            </span>
+                          </div>
+                          <div className="relative z-10 w-full px-1 pb-1 mt-auto">
+                            <span className="block text-[9px] font-bold text-slate-100 text-center leading-[1.2] break-words line-clamp-2 sm:text-[10px]">
+                              {playerState.name || "Pilih pemain"}
+                            </span>
+                            {!playerState.name && (
+                              <span className="block text-[7px] text-slate-400 text-center font-bold mt-0.5 animate-pulse">
+                                klik untuk pilih
+                              </span>
+                            )}
+                          </div>
                         </>
                       ) : (
-                        <>
-                          <Sparkles size={15} className="text-white/30 group-hover:text-white/60 transition-colors" />
-                          <span className="text-[8px] text-white/30 font-bold mt-px uppercase tracking-wider group-hover:text-white/60 transition-colors">
-                            Gacha
+                        <div className="flex flex-col items-center justify-center gap-1.5 h-full">
+                          <Sparkles size={16} className="text-white/25 group-hover:text-white/50 transition-colors" />
+                          <span className="text-[8px] text-white/25 font-bold uppercase tracking-wider group-hover:text-white/50 transition-colors">
+                            Kosong
                           </span>
-                        </>
+                        </div>
                       )}
                     </div>
                   </button>
@@ -579,40 +656,24 @@ export default function Starting11Game() {
         ))}
       </div>
 
-      {/* actions */}
-      <div className="flex flex-wrap justify-center gap-3">
-        <Button size="md" onClick={spinAll}>
-          <Sparkles size={18} /> Auto Spin Semua
-        </Button>
-        <Button
-          size="md"
-          variant="secondary"
-          onClick={() => lineup.forEach((id) => { if (get(id).clubId) spin(id); })}
-        >
-          Respin Terisi
-        </Button>
-        <Button size="md" variant="danger" onClick={resetAll}>
-          <X size={18} /> Reset Pitch
-        </Button>
-      </div>
-
       {/* slot-machine gacha modal */}
       <GachaModal
         open={!!gacha}
         phase={gacha?.phase ?? "spin"}
         result={gacha?.result ?? null}
         title={gacha ? get(gacha.slotId).name || "Player" : undefined}
+        pool={pool}
       />
 
-      {/* name picker modal */}
+      {/* nominee picker modal: 4 candidates (GK/DEF/MID/FWD) matching club+country */}
       <AnimatePresence>
-        {pickerFor && (
+        {pickSlot && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
-            onClick={() => setPickerFor(null)}
+            onClick={() => setPickSlot(null)}
           >
             <motion.div
               initial={{ scale: 0.92, y: 20 }}
@@ -621,31 +682,100 @@ export default function Starting11Game() {
               className="bg-slate-900 border border-slate-600 rounded-2xl p-6 w-full max-w-md space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-xl font-bold text-slate-100">
-                Nama pemain untuk slot{" "}
-                <span className="text-green-400">
-                  {formation.positions.find((p) => p.id === pickerFor)?.label}
-                </span>
-              </h3>
-              <input
-                autoFocus
-                value={pickerName}
-                onChange={(e) => setPickerName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && assignName()}
-                placeholder="Contoh: Messi"
-                className="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-xl text-slate-100 focus:outline-none focus:border-green-400"
-              />
-              <div className="flex gap-2 justify-end">
-                <Button variant="secondary" onClick={() => setPickerFor(null)}>Batal</Button>
-                <Button onClick={assignName}><UserPlus size={18} /> Pasang</Button>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+                    Pilih pemain
+                  </h3>
+                  <p className="text-sm text-slate-400 mt-1">
+                    <span className="text-green-400">{get(pickSlot).name ? get(pickSlot).name : "Slot"}</span>
+                    {" · "}
+                    <span className="text-slate-200">
+                      {clubs.find((c) => c.id === get(pickSlot).clubId)?.name ?? "—"}
+                    </span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => setPickSlot(null)}
+                  className="text-slate-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                  aria-label="Tutup"
+                >
+                  <X size={20} />
+                </button>
               </div>
+
+              {picking ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-10 text-slate-400">
+                  <Loader2 size={28} className="animate-spin" />
+                  <span className="text-sm font-bold">Mencari kandidat pemain…</span>
+                </div>
+              ) : pickErr ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-8 text-amber-400">
+                  <ShieldAlert size={28} />
+                  <span className="text-sm font-bold">Gagal memuat kandidat.</span>
+                  <div className="flex gap-2">
+                    <Button variant="secondary" onClick={() => fetchNominees(pickSlot)}>
+                      Coba lagi
+                    </Button>
+                    <Button variant="secondary" onClick={() => setPickSlot(null)}>Batal</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2.5">
+                  {(nomineesBySlot[pickSlot] ?? []).map((n) => (
+                    <button
+                      key={n.role}
+                      disabled={!n.name}
+                      onClick={() => pickNominee(pickSlot, n)}
+                      className={`w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all cursor-pointer ${
+                        n.name
+                          ? "bg-slate-800/70 border-slate-600 hover:border-green-400 hover:bg-slate-800"
+                          : "bg-slate-800/40 border-slate-700 opacity-50 cursor-not-allowed"
+                      }`}
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: ROLE_COLORS[n.role] }}
+                      />
+                      <span className="w-24 shrink-0 text-xs font-black uppercase tracking-wide text-slate-400">
+                        {n.label}
+                      </span>
+                      <span className="flex-1 min-w-0 font-bold text-slate-100 truncate">
+                        {n.name || "— kosong —"}
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 shrink-0">
+                        {n.from === "exact"
+                          ? "Klub & Negara"
+                          : n.from === "club"
+                          ? "Klub"
+                          : n.from === "country"
+                          ? "Negara"
+                          : "Pilihan"}
+                      </span>
+                    </button>
+                  ))}
+                  <div className="flex items-center justify-between pt-1">
+                    <p className="text-[11px] text-slate-500">
+                      {/* hijau = pas dengan klub & negara; abu = cadangan */}
+                      Kandidat acak sesuai klub & negara.
+                    </p>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => fetchNominees(pickSlot)}
+                    >
+                      <RefreshCw size={15} /> Acak lagi
+                    </Button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
       <p className="text-center text-sm text-slate-500">
-        Klik slot untuk gacha klub + bendera, klik lagi untuk isi nama pemain. Seret pemain ke posisi/slot lain untuk bertukar posisi otomatis (seperti FIFA).
+        Tekan <span className="text-green-400 font-bold">Gacha Pemain</span> untuk mengundi klub + negara dan mengisi 1 slot, lalu pilih salah satu dari 4 kandidat pemain (kiper, bek, gelandang, penyerang). Klik pemain untuk mengganti kandidat. Seret pemain ke posisi/slot lain untuk bertukar posisi otomatis (seperti FIFA).
       </p>
     </div>
   );

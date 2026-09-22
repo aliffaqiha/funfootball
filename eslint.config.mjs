@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone Node data scripts.
+    "import-football-data.ts",
+    "prisma/**",
   ]),
 ]);
 

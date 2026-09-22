@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TriviaCategory {
+  General
+  Medium
+  Hard
+}
+
+model Country {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  iso3    String?  @unique
+  fifaRank Int?
+  flag    String?
+  clubs   Club[]
+  players Player[]
+}
+
+model Club {
+  id           String  @id @default(cuid())
+  key          String  @unique
+  name         String  @unique
+  color        String
+  countryId    String?
+  country      Country? @relation(fields: [countryId], references: [id])
+  isStarting11 Boolean  @default(false)
+  flag         String?
+  players      Player[]
+}
+
+model Player {
+  id                   String     @id @default(cuid())
+  transfermarktId      Int        @unique
+  name                 String
+  position             String?
+  nationality          String?
+  countryId            String?
+  country              Country?   @relation(fields: [countryId], references: [id])
+  domesticCompetitionId String?
+  currentClub          String?
+  clubId               String?
+  club                 Club?      @relation(fields: [clubId], references: [id])
+  transfers            Transfer[]
+}
+
+model Transfer {
+  id          String   @id @default(cuid())
+  playerId    String
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  transferKey String?
+  fromClub    String
+  toClub      String
+  season      String?
+  fee         Int?
+  createdAt   DateTime @default(now())
+
+  @@unique([playerId, transferKey])
+  @@index([playerId, fromClub, toClub])
+  @@index([toClub])
+  @@index([fromClub])
+}
+
+model TriviaQuestion {
+  id       Int             @id @default(autoincrement())
+  category TriviaCategory
+  question String
+  options  String[]
+  answer   String
+}

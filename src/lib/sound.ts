@@ -40,10 +40,24 @@ export function setMuted(value: boolean) {
   if (typeof window !== "undefined") {
     localStorage.setItem("fph-muted", value ? "1" : "0");
   }
+  emitMutedChange();
 }
 
 export function isMuted(): boolean {
   return muted;
+}
+
+const mutedListeners = new Set<() => void>();
+
+export function subscribeMuted(listener: () => void): () => void {
+  mutedListeners.add(listener);
+  return () => {
+    mutedListeners.delete(listener);
+  };
+}
+
+function emitMutedChange() {
+  mutedListeners.forEach((listener) => listener());
 }
 
 export function initSound() {
