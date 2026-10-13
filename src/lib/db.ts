@@ -1,23 +1,25 @@
-import 'dotenv/config'
-import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '@/generated/prisma/client'
+import "dotenv/config";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@/generated/prisma/client";
 
-const DATABASE_URL = process.env.DATABASE_URL
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+let moduleClient: PrismaClient | undefined;
 
-if (!DATABASE_URL) {
-  throw new Error(
-    'DATABASE_URL tidak ditemukan. Salin .env.example menjadi .env lalu isi koneksi PostgreSQL lokal Anda.'
-  )
+export function getDb(): PrismaClient {
+  if (globalForPrisma.prisma) return globalForPrisma.prisma;
+  if (moduleClient) return moduleClient;
+
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error(
+      "DATABASE_URL tidak ditemukan. Salin .env.example menjadi .env lalu isi koneksi PostgreSQL lokal Anda."
+    );
+  }
+
+  const client = new PrismaClient({
+    adapter: new PrismaPg({ connectionString }),
+  });
+  moduleClient = client;
+  if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = client;
+  return client;
 }
-
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
-
-export const db =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    adapter: new PrismaPg({
-      connectionString: DATABASE_URL,
-    }),
-  })
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db

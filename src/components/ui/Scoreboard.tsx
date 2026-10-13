@@ -9,7 +9,7 @@ import Card from "./Card";
 import { playCorrect } from "@/lib/sound";
 
 export default function Scoreboard() {
-  const { state, addPlayer, removePlayer, updateScore, reset } = useScoreboard();
+  const { state, addPlayer, removePlayer, setActivePlayer, updateScore, reset } = useScoreboard();
   const [name, setName] = useState("");
 
   return (
@@ -64,7 +64,7 @@ export default function Scoreboard() {
             layout
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2"
+            className={`flex items-center gap-2 rounded-xl border px-3 py-2 ${state.activeEntryId === entry.id ? "bg-green-950/40 border-green-500/60" : "bg-slate-800/80 border-slate-700"}`}
           >
             <div className="flex-1 min-w-0">
               <p className="font-bold text-slate-100 truncate">{entry.name}</p>
@@ -73,6 +73,14 @@ export default function Scoreboard() {
               </p>
             </div>
             <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setActivePlayer(entry.id)}
+                aria-pressed={state.activeEntryId === entry.id}
+                className={`px-2 py-1 rounded-lg text-xs font-bold cursor-pointer ${state.activeEntryId === entry.id ? "bg-green-500 text-slate-950" : "bg-slate-700 text-slate-300 hover:bg-slate-600"}`}
+              >
+                {state.activeEntryId === entry.id ? "Aktif" : "Pilih"}
+              </button>
               <button
                 onClick={() => {
                   updateScore(entry.id, 10);

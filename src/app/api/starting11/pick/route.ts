@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/db";
 
 const ROLES = [
   { role: "GK", pos: "Goalkeeper", label: "Kiper" },
@@ -14,23 +14,16 @@ export interface PickNominee {
   from: "exact" | "club";
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 async function pickOne(
+  db: ReturnType<typeof getDb>,
   role: "GK" | "DEF" | "MID" | "FWD",
   pos: string,
   clubId: string,
   year: number | null
 ): Promise<{ name: string; from: PickNominee["from"] } | null> {
   if (year) {
-    const rows = await db.stint.findMany({
+    const rows = await db.stint.groupBy({
+      by: ["name"],
       where: {
         clubId,
         position: pos,
@@ -38,28 +31,26 @@ async function pickOne(
         toYear: { gte: year },
         name: { notIn: ["", "Unknown Player"] },
       },
-      select: { name: true },
-      distinct: ["name"],
-      take: 60,
     });
     if (rows.length > 0) {
-      return { name: shuffle(rows)[0].name, from: "exact" };
+      return { name: rows[Math.floor(Math.random() * rows.length)].name, from: "exact" };
     }
     return null;
   }
 
   const rows = await db.player.findMany({
-    where: { clubId, position: pos, name: { not: "Unknown Player" } },
+    where: { clubId, position: pos, name: { notIn: ["", "Unknown Player"] } },
     select: { name: true },
-    take: 60,
+    distinct: ["name"],
   });
   if (rows.length > 0) {
-    return { name: shuffle(rows)[0].name, from: "club" };
+    return { name: rows[Math.floor(Math.random() * rows.length)].name, from: "club" };
   }
   return null;
 }
 
 export async function GET(request: Request) {
+  const db = getDb();
   const url = new URL(request.url);
   const clubParam = url.searchParams.get("club");
   const yearParam = url.searchParams.get("year");
@@ -84,16 +75,15 @@ export async function GET(request: Request) {
     return Response.json({ error: "Klub tidak ditemukan" }, { status: 404 });
   }
 
-  const nominees: PickNominee[] = [];
-  for (const r of ROLES) {
-    const picked = await pickOne(r.role, r.pos, club.id, yearValid ? year : null);
-    nominees.push({
+  const nominees = await Promise.all(ROLES.map(async (r): Promise<PickNominee> => {
+    const picked = await pickOne(db, r.role, r.pos, club.id, yearValid ? year : null);
+    return {
       role: r.role,
       label: r.label,
       name: picked?.name ?? "",
       from: picked?.from ?? (yearValid ? "exact" : "club"),
-    });
-  }
+    };
+  }));
 
   return Response.json({
     club: {

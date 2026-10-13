@@ -34,6 +34,9 @@ model Club {
   flag         String?
   players      Player[]
   stints       Stint[]
+
+  @@index([countryId])
+  @@index([isStarting11])
 }
 
 model Player {
@@ -53,6 +56,9 @@ model Player {
   clubId               String?
   club                 Club?      @relation(fields: [clubId], references: [id])
   transfers            Transfer[]
+
+  @@index([clubId])
+  @@index([countryId])
 }
 
 model Transfer {

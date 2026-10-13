@@ -19,29 +19,39 @@ export default function CountdownTimer({
 }: CountdownTimerProps) {
   const [remaining, setRemaining] = useState(seconds);
   const completedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
+    completedRef.current = false;
+    setRemaining(seconds);
     if (!running) return;
-    const interval = setInterval(() => {
-      setRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          if (!completedRef.current) {
-            completedRef.current = true;
-            onComplete?.();
-          }
-          return 0;
-        }
-        if (playTick && prev <= 4) {
-          playTimerTick();
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [running, onComplete, playTick]);
 
-  const pct = (remaining / seconds) * 100;
+    const duration = Math.max(0, seconds) * 1000;
+    const deadline = Date.now() + duration;
+    let previousRemaining = Math.ceil(duration / 1000);
+
+    const tick = () => {
+      const nextRemaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      setRemaining(nextRemaining);
+
+      if (playTick && nextRemaining < previousRemaining && nextRemaining <= 4 && nextRemaining > 0) {
+        playTimerTick();
+      }
+      previousRemaining = nextRemaining;
+
+      if (nextRemaining === 0 && !completedRef.current) {
+        completedRef.current = true;
+        onCompleteRef.current?.();
+      }
+    };
+
+    tick();
+    const interval = window.setInterval(tick, 200);
+    return () => window.clearInterval(interval);
+  }, [running, seconds, playTick]);
+
+  const pct = seconds > 0 ? Math.min(100, Math.max(0, (remaining / seconds) * 100)) : 0;
   const danger = remaining <= 3 && running && remaining > 0;
 
   return (

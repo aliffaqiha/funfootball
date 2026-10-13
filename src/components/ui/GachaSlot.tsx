@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface GachaSlotProps {
@@ -18,7 +18,15 @@ export default function GachaSlot({
   renderItem,
   size = 96,
 }: GachaSlotProps) {
-  const displayItems = spinning ? shuffleForSpin(items) : null;
+  const [displayItems, setDisplayItems] = useState<(string | number)[]>([]);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  useEffect(() => {
+    if (spinning) setDisplayItems(shuffleForSpin(itemsRef.current));
+  }, [spinning]);
+
+  const reelItems = displayItems.length ? [...displayItems, ...displayItems] : [];
 
   return (
     <div
@@ -27,15 +35,16 @@ export default function GachaSlot({
     >
       {spinning ? (
         <motion.div
-          animate={{ y: [0, -size * 4, 0] }}
+          animate={{ y: [0, -size * displayItems.length] }}
           transition={{
             duration: 1.4,
-            ease: "easeInOut",
+            ease: "linear",
             repeat: Infinity,
+            repeatType: "loop",
           }}
           className="flex flex-col items-center"
         >
-          {displayItems?.slice(0, 8).map((item, i) => (
+          {reelItems.map((item, i) => (
             <div
               key={i}
               className="flex items-center justify-center"

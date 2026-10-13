@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Dices, Check, X, RefreshCw } from "lucide-react";
 import { playCorrect, playSpin, playWrong } from "@/lib/sound";
 import GachaSlot from "@/components/ui/GachaSlot";
 import CountdownTimer from "@/components/ui/CountdownTimer";
 import Button from "@/components/ui/Button";
+import players from "@/data/players.json";
+import { useKeyboardShortcuts } from "@/lib/useKeyboard";
 
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const VALID_PAIRS = [...new Set(players.map((player) => player.firstName.slice(0, 2).toUpperCase()).filter((pair) => /^[A-Z]{2}$/.test(pair)))];
 
 interface GuessPlayerGameProps {
   hostView: boolean;
@@ -22,35 +25,53 @@ export default function GuessPlayerGame({ hostView, onCorrect, onWrong }: GuessP
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<"correct" | "wrong" | null>(null);
   const [guessInput, setGuessInput] = useState("");
+  const resolvedRef = useRef(false);
+  const spinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (spinTimeoutRef.current) clearTimeout(spinTimeoutRef.current);
+  }, []);
 
   const spinLetters = () => {
     if (spinning) return;
     setSpinning(true);
     setRunning(false);
     setResult(null);
+    resolvedRef.current = false;
     playSpin();
-    setTimeout(() => {
-      const l1 = LETTERS[Math.floor(Math.random() * LETTERS.length)];
-      const l2 = LETTERS[Math.floor(Math.random() * LETTERS.length)];
-      setLetters([l1, l2]);
+    spinTimeoutRef.current = setTimeout(() => {
+      const pair = VALID_PAIRS[Math.floor(Math.random() * VALID_PAIRS.length)];
+      setLetters([pair[0], pair[1]]);
       setSpinning(false);
       setRunning(true);
     }, 1600);
   };
 
-  const handleCorrect = () => {
-    setResult("correct");
+  const handleAnswer = (answer: "correct" | "wrong") => {
+    if (!running || resolvedRef.current) return;
+    resolvedRef.current = true;
+    setResult(answer);
     setRunning(false);
-    playCorrect();
-    onCorrect();
+    if (answer === "correct") {
+      playCorrect();
+      onCorrect();
+    } else {
+      playWrong();
+      onWrong();
+    }
   };
 
-  const handleWrong = () => {
-    setResult("wrong");
-    setRunning(false);
-    playWrong();
-    onWrong();
-  };
+  const handleCorrect = () => handleAnswer("correct");
+  const handleWrong = () => handleAnswer("wrong");
+
+  useKeyboardShortcuts({
+    " ": (event) => {
+      event.preventDefault();
+      if (!spinning) spinLetters();
+    },
+    Enter: handleCorrect,
+    Backspace: handleWrong,
+  });
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8 flex flex-col items-center">
@@ -103,7 +124,7 @@ export default function GuessPlayerGame({ hostView, onCorrect, onWrong }: GuessP
       )}
 
       {running && (
-        <CountdownTimer seconds={10} running={running} />
+        <CountdownTimer seconds={10} running={running} onComplete={handleWrong} />
       )}
 
       {result && (

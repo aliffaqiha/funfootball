@@ -98,12 +98,14 @@ function Reel({
         {[...texts, ...texts].map((t, i) => (
           <span
             key={i}
-            className="text-slate-100 font-black text-2xl sm:text-4xl whitespace-nowrap block"
+            className="text-slate-100 font-black text-2xl sm:text-4xl whitespace-nowrap block overflow-hidden text-ellipsis text-center"
             style={{
               height: ROW,
               lineHeight: `${ROW}px`,
-              color: isWinner && t === winnerText ? winnerColor : undefined,
+              maxWidth: "min(72vw, 340px)",
+              color: isWinner && t === winnerText ? readableColor(winnerColor) : undefined,
             }}
+            title={t}
           >
             {t}
           </span>
@@ -122,12 +124,25 @@ function Reel({
   );
 }
 
+function readableColor(color?: string) {
+  const match = color?.match(/^#([\da-f]{3}|[\da-f]{6})$/i);
+  if (!match) return color;
+  const hex = match[1].length === 3 ? [...match[1]].map((c) => c + c).join("") : match[1];
+  const channels = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const luminance = channels
+    .map((channel) => (channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4))
+    .reduce((sum, channel, i) => sum + channel * [0.2126, 0.7152, 0.0722][i], 0);
+  return luminance < 0.35 ? "#f8fafc" : color;
+}
+
 export default function GachaModal({ open, phase, result, year, title, pool }: GachaModalProps) {
   const yearNames = useMemo(() => pool.years.map((y) => String(y)), [pool.years]);
   const clubNames = useMemo(() => pool.clubs.map((c) => c.name), [pool.clubs]);
 
-  const yearIndex = year != null ? yearNames.indexOf(String(year)) : null;
-  const clubIndex = result ? clubNames.indexOf(result.name) : null;
+  const rawYearIndex = year != null ? yearNames.indexOf(String(year)) : -1;
+  const yearIndex = rawYearIndex >= 0 ? rawYearIndex : null;
+  const rawClubIndex = result ? clubNames.indexOf(result.name) : -1;
+  const clubIndex = rawClubIndex >= 0 ? rawClubIndex : null;
 
   // Sequential reveal: year stops first, then the club reel enters with its own gacha animation.
   const [clubStage, setClubStage] = useState<"wait" | "spin" | "settle">("wait");

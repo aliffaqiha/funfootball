@@ -50,13 +50,14 @@ async function main() {
   })
 
   try {
-    await prisma.club.updateMany({ where: { isStarting11: true }, data: { isStarting11: false } })
-    await prisma.country.updateMany({ where: { fifaRank: { not: null } }, data: { fifaRank: null } })
+    await prisma.$transaction(async (tx) => {
+    await tx.club.updateMany({ where: { isStarting11: true }, data: { isStarting11: false } })
+    await tx.country.updateMany({ where: { fifaRank: { not: null } }, data: { fifaRank: null } })
 
     const countryIdByIso = new Map<string, string>()
     for (const c of pool.countries) {
       const name = canonicalCountryName(c.name)
-      const row = await prisma.country.upsert({
+      const row = await tx.country.upsert({
         where: { name },
         update: { iso3: c.code, fifaRank: c.rank, flag: c.flag },
         create: { name, iso3: c.code, fifaRank: c.rank, flag: c.flag },
@@ -67,11 +68,11 @@ async function main() {
 
     for (const club of pool.clubs) {
       const countryId = countryIdByIso.get(club.country) ?? null
-      const byName = await prisma.club.findUnique({ where: { name: club.name } })
-      const byKey = byName ? null : await prisma.club.findUnique({ where: { key: club.id } })
+      const byName = await tx.club.findUnique({ where: { name: club.name } })
+      const byKey = byName ? null : await tx.club.findUnique({ where: { key: club.id } })
       const existing = byName ?? byKey
       if (existing) {
-        await prisma.club.update({
+        await tx.club.update({
           where: { id: existing.id },
           data: {
             key: club.id,
@@ -82,7 +83,7 @@ async function main() {
           },
         })
       } else {
-        await prisma.club.create({
+        await tx.club.create({
           data: {
             key: club.id,
             name: club.name,
@@ -96,9 +97,10 @@ async function main() {
     }
     console.log(`[sync11] ${pool.clubs.length} elite club ditandai isStarting11`)
 
-    const named = await prisma.club.count({ where: { isStarting11: true } })
-    const ranked = await prisma.country.count({ where: { fifaRank: { not: null } } })
+    const named = await tx.club.count({ where: { isStarting11: true } })
+    const ranked = await tx.country.count({ where: { fifaRank: { not: null } } })
     console.log(`[sync11] klub=starting11:${named} negara=berRanking:${ranked}`)
+    }, { timeout: 120_000 })
   } finally {
     await prisma.$disconnect()
   }

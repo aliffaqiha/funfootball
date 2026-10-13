@@ -1,10 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Eye, Check, X, RefreshCw, ChevronRight } from "lucide-react";
 import trivia from "@/data/trivia.json";
-import { playCorrect, playWrong, playTimerTick } from "@/lib/sound";
+import { playCorrect, playWrong } from "@/lib/sound";
 import { fireConfetti } from "@/lib/confetti";
 import { useKeyboardShortcuts } from "@/lib/useKeyboard";
 import Button from "@/components/ui/Button";
@@ -22,6 +22,7 @@ export default function TriviaGame({ hostView, onCorrect, onWrong }: TriviaGameP
   const [phase, setPhase] = useState<"ready" | "playing" | "done">("ready");
   const [revealed, setRevealed] = useState(false);
   const [result, setResult] = useState<"correct" | "wrong" | null>(null);
+  const resolvedRef = useRef(false);
 
   const categories = useMemo(
     () => ["All", ...Array.from(new Set(trivia.map((q) => q.category)))],
@@ -36,6 +37,7 @@ export default function TriviaGame({ hostView, onCorrect, onWrong }: TriviaGameP
   const question = list[Math.min(index, list.length - 1)];
 
   const resetRound = () => {
+    resolvedRef.current = false;
     setRevealed(false);
     setResult(null);
     setPhase("ready");
@@ -48,20 +50,29 @@ export default function TriviaGame({ hostView, onCorrect, onWrong }: TriviaGameP
   };
 
   const startTimer = () => {
+    resolvedRef.current = false;
     setPhase("playing");
     setRevealed(false);
     setResult(null);
   };
 
   const handleCorrect = () => {
+    if (resolvedRef.current || phase !== "playing") return;
+    resolvedRef.current = true;
     setResult("correct");
+    setPhase("done");
+    setRevealed(true);
     playCorrect();
     fireConfetti();
     onCorrect();
   };
 
   const handleWrong = () => {
+    if (resolvedRef.current || phase !== "playing") return;
+    resolvedRef.current = true;
     setResult("wrong");
+    setPhase("done");
+    setRevealed(true);
     playWrong();
     onWrong();
   };
@@ -124,16 +135,30 @@ export default function TriviaGame({ hostView, onCorrect, onWrong }: TriviaGameP
           {question.question}
         </h2>
 
-        {phase === "playing" && !revealed && (
+        {phase === "playing" && (
           <CountdownTimer
             seconds={15}
             running={phase === "playing"}
-            onComplete={() => playTimerTick()}
+            onComplete={handleWrong}
             playTick={false}
           />
         )}
 
-        {phase !== "ready" && !revealed && (
+        {phase === "playing" && !revealed && !hostView && (
+          <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {question.options.map((option) => (
+              <div key={option} className="text-center px-4 py-3 rounded-xl font-bold text-lg border bg-slate-800 border-slate-600 text-slate-300">
+                {option}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {phase === "playing" && !revealed && hostView && (
+          <HostHint answer={question.answer} />
+        )}
+
+        {phase === "playing" && !revealed && (
           <p className="text-slate-400 text-xl">
             {hostView ? "(Menunggu Reveal...)" : "Tebak jawabannya!"}
           </p>
@@ -199,7 +224,7 @@ export default function TriviaGame({ hostView, onCorrect, onWrong }: TriviaGameP
           size="md"
           variant="success"
           onClick={handleCorrect}
-          disabled={phase === "ready"}
+          disabled={phase !== "playing"}
         >
           <Check size={18} /> Benar (+10) [Enter]
         </Button>
@@ -207,7 +232,7 @@ export default function TriviaGame({ hostView, onCorrect, onWrong }: TriviaGameP
           size="md"
           variant="danger"
           onClick={handleWrong}
-          disabled={phase === "ready"}
+          disabled={phase !== "playing"}
         >
           <X size={18} /> Salah (0) [Backspace]
         </Button>

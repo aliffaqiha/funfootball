@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Trophy, X, Sparkles, ChevronDown, Loader2, ShieldAlert, Dices } from "lucide-react";
+import { Trophy, X, Sparkles, ChevronDown, ChevronRight, Loader2, ShieldAlert, Dices } from "lucide-react";
 import staticPool from "@/data/starting11-pool.json";
 import { playCorrect, playSpin } from "@/lib/sound";
 import GachaSlot from "@/components/ui/GachaSlot";
@@ -112,9 +113,9 @@ const FORMATIONS: FormationDef[] = [
       { id: "rb",   label: "RB",  role: "DEF", row: 4, col: 7 },
       { id: "cdm1", label: "CDM", role: "MID", row: 3, col: 3 },
       { id: "cdm2", label: "CDM", role: "MID", row: 3, col: 5 },
-      { id: "lam",  label: "LAM", role: "FWD", row: 2, col: 2 },
-      { id: "cam",  label: "CAM", role: "FWD", row: 2, col: 0 },
-      { id: "ram",  label: "RAM", role: "FWD", row: 2, col: 6 },
+      { id: "lam",  label: "LAM", role: "MID", row: 2, col: 2 },
+      { id: "cam",  label: "CAM", role: "MID", row: 2, col: 0 },
+      { id: "ram",  label: "RAM", role: "MID", row: 2, col: 6 },
       { id: "st",   label: "ST",  role: "FWD", row: 1, col: 0 },
     ],
   },
@@ -130,7 +131,7 @@ const FORMATIONS: FormationDef[] = [
       { id: "cdm", label: "CDM", role: "MID", row: 3, col: 0 },
       { id: "lm",  label: "LM",  role: "MID", row: 3, col: 2 },
       { id: "rm",  label: "RM",  role: "MID", row: 3, col: 6 },
-      { id: "cam", label: "CAM", role: "FWD", row: 2, col: 0 },
+      { id: "cam", label: "CAM", role: "MID", row: 2, col: 0 },
       { id: "st1", label: "ST",  role: "FWD", row: 1, col: 3 },
       { id: "st2", label: "ST",  role: "FWD", row: 1, col: 5 },
     ],
@@ -199,6 +200,13 @@ const ROLE_COLORS: Record<string, string> = {
   FWD: "#f87171",
 };
 
+const ROLE_TEXT: Record<string, string> = {
+  GK: "Goalkeeper",
+  DEF: "Defender",
+  MID: "Midfielder",
+  FWD: "Forward",
+};
+
 const CLUB_SHORT: Record<string, string> = {
   "Manchester United": "MUN", "Manchester City": "MCI", "Real Madrid": "RMA",
   "Barcelona": "BAR", "Bayern Munich": "BAY", "Paris Saint-Germain": "PSG",
@@ -232,8 +240,14 @@ function posLeftNum(col: number): number {
 /* -------------------------------------------------------------------------- */
 
 export default function Starting11Game() {
+  const [mounted, setMounted] = useState(false);
   const [formationId, setFormationId] = useState("4-3-3");
   const [formationOpen, setFormationOpen] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(t);
+  }, []);
 
   const formation = useMemo(
     () => FORMATIONS.find((f) => f.id === formationId) ?? FORMATIONS[0],
@@ -249,6 +263,30 @@ export default function Starting11Game() {
   const [randTick, setRandTick] = useState(0);
   const [lineup, setLineup] = useState<string[]>(() => FORMATIONS[0].positions.map((p) => p.id));
   const pitchRef = useRef<HTMLDivElement | null>(null);
+  const gachaTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const gachaLockedRef = useRef(false);
+
+  const clearGachaTimers = useCallback(() => {
+    gachaTimersRef.current.forEach(clearTimeout);
+    gachaTimersRef.current = [];
+    gachaLockedRef.current = false;
+  }, []);
+
+  useEffect(() => clearGachaTimers, [clearGachaTimers]);
+
+  useEffect(() => {
+    if (!pickSlot) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPickSlot(null);
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [pickSlot]);
 
   // slots = resolved positions with numeric coords, ordered
   const slots = useMemo(
@@ -325,7 +363,11 @@ export default function Starting11Game() {
       }
     });
 
-    if (best !== drag.idx) {
+    const distanceToTarget = Math.sqrt(bestD);
+    const movedEnough = draggedRef.current;
+    // Require the release point to be near another marker; otherwise return to
+    // the original slot instead of snapping to whichever slot happens to be nearest.
+    if (movedEnough && best !== drag.idx && distanceToTarget <= 6) {
       setLineup((prev) => {
         const next = [...prev];
         const t = next[drag.idx];
@@ -403,10 +445,12 @@ const fetchNominees = useCallback(
 
   // gacha: pilih klub dulu, lalu tahun valid untuk klub itu (fallback pool.years)
   const startGacha = useCallback((slotId: string) => {
+    if (gachaLockedRef.current || !clubs.length) return;
+    gachaLockedRef.current = true;
     playSpin();
     setGacha({ slotId, phase: "spin", result: null, year: null });
     setSpinning((p) => ({ ...p, [slotId]: true }));
-    setTimeout(() => {
+    const spinTimer = setTimeout(() => {
       const club = clubs[Math.floor(Math.random() * clubs.length)];
       const clubYears = pool.yearsByClub?.[club.id] ?? [];
       const year =
@@ -423,11 +467,14 @@ const fetchNominees = useCallback(
       setGacha({ slotId, phase: "done", result: club, year });
       playCorrect();
       void fetchNominees(slotId, club.id, year);
-      setTimeout(() => {
+      const modalTimer = setTimeout(() => {
         setGacha(null);
         openPicker(slotId, club.id, year);
+        gachaLockedRef.current = false;
       }, 4000);
+      gachaTimersRef.current.push(modalTimer);
     }, 2600);
+    gachaTimersRef.current.push(spinTimer);
   }, [clubs, pool.years, pool.yearsByClub, openPicker, fetchNominees]);
 
   // 1 tombol gacha independen — isi 1 slot kosong secara acak
@@ -442,14 +489,16 @@ const fetchNominees = useCallback(
   const fullRoles = useMemo(() => {
     const totals: Record<PickNominee["role"], number> = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
     const filled: Record<PickNominee["role"], number> = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
-    slots.forEach((s) => {
-      totals[s.role]++;
-      if (get(s.id).name) filled[s.role]++;
+    lineup.forEach((id, index) => {
+      const role = slots[index]?.role;
+      if (!role) return;
+      totals[role]++;
+      if (get(id).name) filled[role]++;
     });
     return Object.fromEntries(
       (Object.keys(totals) as PickNominee["role"][]).map((r) => [r, filled[r] >= totals[r]])
     ) as Record<PickNominee["role"], boolean>;
-  }, [slots, get]);
+  }, [slots, lineup, get]);
 
   // nama pemain yang sudah di-pick → tidak boleh terpilih ulang
   const pickedNames = useMemo(() => {
@@ -461,14 +510,17 @@ const fetchNominees = useCallback(
   }, [data]);
 
   const pickNominee = (slotId: string, nominee: PickNominee) => {
-    if (!nominee.name || fullRoles[nominee.role] || pickedNames.has(nominee.name)) return;
+    const isReplacingInSameRole = slots[lineup.indexOf(slotId)]?.role === nominee.role;
+    const isCurrentPlayer = get(slotId).name === nominee.name;
+    if (!nominee.name || (fullRoles[nominee.role] && !isReplacingInSameRole) || (pickedNames.has(nominee.name) && !(isCurrentPlayer && isReplacingInSameRole))) return;
     const clubId = get(slotId).clubId;
     const year = get(slotId).year;
     // tempatkan otomatis ke slot pertama dari role sang pemain yang belum punya nama
-    const targetId = lineup.find((id) => {
-      const s = slots.find((x) => x.id === id);
-      return s && s.role === nominee.role && !get(id).name;
-    });
+    const sourceIndex = lineup.indexOf(slotId);
+    const sourceRole = sourceIndex >= 0 ? slots[sourceIndex]?.role : undefined;
+    const targetId = sourceRole === nominee.role
+      ? slotId
+      : lineup.find((id, index) => slots[index]?.role === nominee.role && !get(id).name);
     if (!targetId) return;
     setData((p) => {
       const next = {
@@ -480,7 +532,7 @@ const fetchNominees = useCallback(
         },
       };
       // satu gacha = satu pemain: bila slot undian tadi tidak terpakai dan belum ada nama, bersihkan lagi
-      if (targetId !== slotId && !next[slotId]?.name) {
+      if (targetId !== slotId && !p[slotId]?.name) {
         next[slotId] = { clubId: null, name: "", year: null };
       }
       return next;
@@ -490,6 +542,7 @@ const fetchNominees = useCallback(
   };
 
   const resetAll = () => {
+    clearGachaTimers();
     setData({});
     setSpinning({});
     setGacha(null);
@@ -499,6 +552,16 @@ const fetchNominees = useCallback(
   };
 
   const changeFormation = (id: string) => {
+    if (id === formationId) {
+      setFormationOpen(false);
+      return;
+    }
+    const hasProgress =
+      Object.values(data).some((entry) => entry.clubId || entry.name) ||
+      !!gacha ||
+      lineup.some((slotId, index) => slotId !== formation.positions[index]?.id);
+    if (hasProgress && !window.confirm("Ganti formasi? Semua pilihan pemain dan hasil gacha saat ini akan dihapus.")) return;
+    clearGachaTimers();
     setFormationId(id);
     setFormationOpen(false);
     setData({});
@@ -723,7 +786,7 @@ const fetchNominees = useCallback(
         {Object.entries(ROLE_COLORS).map(([role, color]) => (
           <span key={role} className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: color }} />
-            {role === "GK" ? "Goalkeeper" : role === "DEF" ? "Defender" : role === "MID" ? "Midfielder" : "Forward"}
+            {ROLE_TEXT[role]}
           </span>
         ))}
       </div>
@@ -739,40 +802,48 @@ const fetchNominees = useCallback(
       />
 
       {/* nominee picker modal: 4 candidates (GK/DEF/MID/FWD) matching club+year */}
-      <AnimatePresence>
-        {pickSlot && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
-            onClick={() => setPickSlot(null)}
-          >
+      {mounted &&
+        createPortal(
+          <AnimatePresence>
+            {pickSlot && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 overflow-y-auto"
+                onClick={() => setPickSlot(null)}
+              >
             <motion.div
-              initial={{ scale: 0.92, y: 20 }}
+              initial={{ scale: 0.96, y: 24 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.92, y: 20 }}
-              className="bg-slate-900 border border-slate-600 rounded-2xl p-6 w-full max-w-md space-y-4"
+              exit={{ scale: 0.96, y: 24 }}
+              transition={{ type: "spring", stiffness: 260, damping: 26 }}
+              className="bg-slate-900 border border-slate-700 rounded-t-3xl sm:rounded-2xl shadow-2xl p-5 sm:p-6 w-full sm:max-w-lg max-h-[90vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-                    Pilih pemain
+              <div className="flex items-start justify-between gap-3 pb-4 border-b border-slate-700/60 shrink-0">
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-xl font-black text-slate-100">
+                    Pilih Pemain
                   </h3>
-                  <p className="text-sm text-slate-400 mt-1">
-                    <span className="text-green-400">{get(pickSlot).name ? get(pickSlot).name : "Slot"}</span>
-                    {" · "}
-                    <span className="text-slate-200">
-                      {clubs.find((c) => c.id === get(pickSlot).clubId)?.name ?? "—"}
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <span className="max-w-[14rem] truncate px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[11px] font-bold text-slate-200">
+                      {clubs.find((c) => c.id === get(pickSlot).clubId)?.name ?? "Tanpa klub"}
                     </span>
                     {get(pickSlot).year && (
-                      <>
-                        {" · "}
-                        <span className="text-green-400">{get(pickSlot).year}</span>
-                      </>
+                      <span className="px-2 py-0.5 rounded-md bg-green-500/15 border border-green-500/30 text-[11px] font-bold text-green-300">
+                        {get(pickSlot).year}
+                      </span>
                     )}
-                  </p>
+                    <span className="px-2 py-0.5 rounded-md bg-slate-800/60 border border-slate-700/60 text-[11px] font-bold text-slate-400">
+                      {slots.find((s) => s.id === pickSlot)?.label ?? "Slot"}
+                    </span>
+                    {get(pickSlot).name && (
+                      <span className="truncate text-[11px] font-bold text-slate-500">
+                        ganti: {get(pickSlot).name}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <button
                   onClick={() => setPickSlot(null)}
@@ -800,10 +871,11 @@ const fetchNominees = useCallback(
                   </div>
                 </div>
               ) : (
-                <div className="space-y-2.5">
+                <div className="min-h-0 flex-1 overflow-y-auto py-4 space-y-2.5">
                   {(() => {
+                    const currentName = get(pickSlot).name;
                     const candidates = (nomineesBySlot[pickSlot] ?? []).filter(
-                      (n) => n.name && !pickedNames.has(n.name)
+                      (n) => n.name && (!pickedNames.has(n.name) || (n.name === currentName && slots[lineup.indexOf(pickSlot)]?.role === n.role))
                     );
                     const rawNominees = nomineesBySlot[pickSlot] ?? [];
                     if (candidates.length === 0) {
@@ -849,53 +921,73 @@ const fetchNominees = useCallback(
                     }
                     return candidates.map((n, i) => {
                       const full = fullRoles[n.role];
+                      const canReplaceHere = slots[lineup.indexOf(pickSlot)]?.role === n.role;
+                      const blocked = !n.name || (full && !canReplaceHere);
                       return (
                         <motion.button
                           key={`${randTick}-${n.role}`}
                           initial={{ opacity: 0, y: 10, scale: 0.97 }}
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           transition={{ duration: 0.3, delay: i * 0.07, ease: "easeIn" }}
-                          disabled={!n.name || full}
+                          disabled={blocked}
                           onClick={() => pickNominee(pickSlot, n)}
-                          title={full ? "Posisi ini sudah penuh" : undefined}
-                          className={`w-full flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all cursor-pointer ${
-                            !n.name || full
-                              ? "bg-slate-800/30 border-slate-700/60 opacity-40 cursor-not-allowed"
-                              : "bg-slate-800/70 border-slate-600 hover:border-green-400 hover:bg-slate-800"
+                          title={full && !canReplaceHere ? "Posisi ini sudah penuh" : undefined}
+                          className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-all cursor-pointer ${
+                            blocked
+                              ? "bg-slate-900/40 border-slate-800 opacity-45 cursor-not-allowed"
+                              : "bg-slate-800/60 border-slate-700 hover:border-green-400/70 hover:bg-slate-800 active:scale-[0.99]"
                           }`}
                         >
                           <span
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: ROLE_COLORS[n.role] }}
-                          />
-                          <span className="w-24 shrink-0 text-xs font-black uppercase tracking-wide text-slate-400">
+                            className="w-11 h-11 shrink-0 grid place-items-center rounded-lg text-[11px] font-black"
+                            style={{
+                              backgroundColor: `${ROLE_COLORS[n.role]}1f`,
+                              color: ROLE_COLORS[n.role],
+                              boxShadow: `inset 0 0 0 1px ${ROLE_COLORS[n.role]}55`,
+                            }}
+                          >
                             {n.label}
                           </span>
-                          <span className="flex-1 min-w-0 font-bold text-slate-100 truncate">
-                            {n.name || "— kosong —"}
+                          <span className="flex-1 min-w-0">
+                            <span className="block text-sm font-bold text-slate-100 leading-snug break-words line-clamp-2">
+                              {n.name || "— kosong —"}
+                            </span>
+                            <span className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                              <span
+                                className="w-1.5 h-1.5 rounded-full"
+                                style={{ backgroundColor: ROLE_COLORS[n.role] }}
+                              />
+                              {ROLE_TEXT[n.role]}
+                              <span className="text-slate-600">·</span>
+                              {full && !canReplaceHere
+                                ? "Posisi penuh"
+                                : n.from === "exact"
+                                ? "tepat tahun & klub"
+                                : "pernah di klub"}
+                            </span>
                           </span>
-                          <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500 shrink-0">
-                            {full
-                              ? "Posisi penuh"
-                              : n.from === "exact"
-                              ? "Tahun & Klub"
-                              : "Klub"}
-                          </span>
+                          <ChevronRight
+                            size={16}
+                            className={`shrink-0 ${blocked ? "text-slate-700" : "text-slate-500"}`}
+                          />
                         </motion.button>
                       );
                     });
                   })()}
-                  <div className="pt-1">
+                  <div className="pt-3 border-t border-slate-700/60">
                     <p className="text-[11px] text-slate-500 text-center">
-                      Kandidat muncul otomatis dari tahun & klub hasil gacha.
+                      Kandidat diambil dari klub &amp; tahun hasil gacha. Tekan{" "}
+                      <span className="text-slate-400 font-bold">Esc</span> untuk menutup.
                     </p>
                   </div>
                 </div>
               )}
+</motion.div>
             </motion.div>
-          </motion.div>
+          )}
+        </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
 
       <p className="text-center text-sm text-slate-500">
         Tekan <span className="text-green-400 font-bold">Gacha Pemain</span> untuk mengundi tahun + klub dan mengisi 1 slot, lalu pilih salah satu dari 4 kandidat pemain (kiper, bek, gelandang, penyerang) yang pernah bermain di klub pada tahun itu. Klik pemain untuk mengganti kandidat. Seret pemain ke posisi/slot lain untuk bertukar posisi otomatis (seperti FIFA).

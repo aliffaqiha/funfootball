@@ -1,9 +1,11 @@
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import type { GachaPool } from "@/lib/types";
 
 const ROLES = ["Goalkeeper", "Defender", "Midfield", "Attack"];
+const FIRST_YEAR = 2012;
 
 export async function GET() {
+  const db = getDb();
   const clubs = await db.club.findMany({
     where: { isStarting11: true },
     orderBy: [{ country: { fifaRank: "asc" } }, { name: "asc" }],
@@ -11,25 +13,32 @@ export async function GET() {
   });
 
   const stints = await db.stint.findMany({
-    where: { clubId: { in: clubs.map((c) => c.id) } },
+    where: {
+      clubId: { in: clubs.map((c) => c.id) },
+      fromYear: { lte: new Date().getFullYear() },
+      toYear: { gte: FIRST_YEAR },
+    },
     select: { clubId: true, position: true, fromYear: true, toYear: true },
   });
 
-  const byClub = new Map<string, typeof stints>();
+  const byClub = new Map<string, Map<string, typeof stints>>();
   for (const s of stints) {
-    const list = byClub.get(s.clubId) ?? [];
+    const positions = byClub.get(s.clubId) ?? new Map<string, typeof stints>();
+    const list = positions.get(s.position) ?? [];
     list.push(s);
-    byClub.set(s.clubId, list);
+    positions.set(s.position, list);
+    byClub.set(s.clubId, positions);
   }
 
   const yearsByClub: Record<string, number[]> = {};
   const yearSet = new Set<number>();
+  const lastYear = new Date().getFullYear();
   for (const club of clubs) {
-    const list = byClub.get(club.id) ?? [];
+    const positions = byClub.get(club.id) ?? new Map();
     const years: number[] = [];
-    for (let y = 2012; y <= 2025; y++) {
+    for (let y = FIRST_YEAR; y <= lastYear; y++) {
       const ok = ROLES.every((pos) =>
-        list.some((s) => s.position === pos && s.fromYear <= y && s.toYear >= y)
+        (positions.get(pos) ?? []).some((s) => s.fromYear <= y && s.toYear >= y)
       );
       if (ok) {
         years.push(y);
