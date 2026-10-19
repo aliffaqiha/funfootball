@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, animate, motion, useMotionValue } from "framer-motion";
+import { X } from "lucide-react";
 import type { GachaPool, PoolClub } from "@/lib/types";
 
 interface GachaModalProps {
@@ -12,6 +13,7 @@ interface GachaModalProps {
   year: number | null;
   title?: string;
   pool: GachaPool;
+  onClose: () => void;
 }
 
 const ROW = 84;
@@ -135,7 +137,11 @@ function readableColor(color?: string) {
   return luminance < 0.35 ? "#f8fafc" : color;
 }
 
-export default function GachaModal({ open, phase, result, year, title, pool }: GachaModalProps) {
+export default function GachaModal({ open, phase, result, year, title, pool, onClose }: GachaModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const yearNames = useMemo(() => pool.years.map((y) => String(y)), [pool.years]);
   const clubNames = useMemo(() => pool.clubs.map((c) => c.name), [pool.clubs]);
 
@@ -146,6 +152,33 @@ export default function GachaModal({ open, phase, result, year, title, pool }: G
 
   // Sequential reveal: year stops first, then the club reel enters with its own gacha animation.
   const [clubStage, setClubStage] = useState<"wait" | "spin" | "settle">("wait");
+
+  useEffect(() => {
+    if (!open) return;
+
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    modalRef.current?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+      } else if (event.key === "Tab") {
+        // The close button is the only interactive control in the draw overlay.
+        event.preventDefault();
+        closeButtonRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open || phase === "spin") {
@@ -169,6 +202,11 @@ export default function GachaModal({ open, phase, result, year, title, pool }: G
   const modal = (
     <motion.div
       key="gacha-backdrop"
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Undian Starting 11"
+      tabIndex={-1}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -193,6 +231,15 @@ export default function GachaModal({ open, phase, result, year, title, pool }: G
               Drawing...
             </motion.span>
           )}
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={() => onCloseRef.current()}
+            className="absolute top-4 right-4 z-10 rounded-lg border border-white/15 p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-green-400"
+            aria-label="Tutup undian"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* two reels side by side — same place in every phase */}

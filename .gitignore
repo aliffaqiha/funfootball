@@ -50,3 +50,5 @@ next-env.d.ts
 # local log files
 /dev.log
 /db-import.log
+
+dev*.log

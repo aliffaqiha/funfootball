@@ -101,7 +101,11 @@ const getClubShort = (c: string) => {
 
 const MAX_TRANSFERS = 9;
 
-export default function TransferQuizGame() {
+interface TransferQuizGameProps {
+  hostView: boolean;
+}
+
+export default function TransferQuizGame({ hostView }: TransferQuizGameProps) {
   const [round, setRound] = useState(0);
   const [transfers, setTransfers] = useState(0);
   const [revealed, setRevealed] = useState(false);
@@ -190,6 +194,13 @@ export default function TransferQuizGame() {
         <p className="text-slate-400 text-center mb-6 font-bold uppercase tracking-widest text-sm">
           Tebak pemain dari riwayat transfernya
         </p>
+
+        {hostView && !loading && !revealed && (
+          <div className="mb-6 rounded-xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-center" role="status">
+            <span className="block text-xs font-black uppercase tracking-widest text-amber-300">Jawaban untuk host</span>
+            <span className="mt-1 block text-lg font-bold text-slate-100">{player.firstName} {player.lastName}</span>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex flex-col items-center justify-center gap-3 py-16 text-slate-400">

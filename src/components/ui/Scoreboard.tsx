@@ -19,9 +19,13 @@ export default function Scoreboard() {
           Scoreboard
         </h2>
         <button
-          onClick={reset}
+          type="button"
+          onClick={() => {
+            if (state.entries.length === 0 || window.confirm("Reset scoreboard dan hapus semua skor?")) reset();
+          }}
           className="text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
           title="Reset scoreboard"
+          aria-label="Reset scoreboard"
         >
           <RotateCcw size={18} />
         </button>

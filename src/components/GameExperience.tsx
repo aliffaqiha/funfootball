@@ -66,7 +66,7 @@ export default function GameExperience() {
                 >
                   {mode === "trivia" && <TriviaGame {...shortcutProps} />}
                   {mode === "starting11" && <Starting11Game />}
-                  {mode === "transfer" && <TransferQuizGame />}
+                  {mode === "transfer" && <TransferQuizGame hostView={hostView} />}
                   {mode === "guess" && <GuessPlayerGame {...shortcutProps} />}
                 </motion.div>
               </AnimatePresence>

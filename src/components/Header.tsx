@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Volume2,
@@ -14,6 +14,7 @@ import {
   Dices,
   Shirt,
   Gamepad2,
+  X,
 } from "lucide-react";
 import { useKeyboardShortcuts } from "@/lib/useKeyboard";
 import { setMuted } from "@/lib/sound";
@@ -46,6 +47,7 @@ export default function Header({
 }: HeaderProps) {
   const muted = useMuted();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const line1 = useRef<HTMLSpanElement>(null);
   const line2 = useRef<HTMLSpanElement>(null);
 
@@ -53,11 +55,22 @@ export default function Header({
     setMuted(!muted);
   };
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen?.();
-    } else {
-      document.exitFullscreen?.();
+  useEffect(() => {
+    const syncFullscreen = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    syncFullscreen();
+    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen?.();
+      } else {
+        await document.exitFullscreen?.();
+      }
+    } catch {
+      // Fullscreen can be denied by the browser or host environment.
     }
   };
 
@@ -110,37 +123,46 @@ export default function Header({
             <IconBtn onClick={onResetGame} title="Reset Game" active={false}>
               <RotateCcw size={18} />
             </IconBtn>
-            <IconBtn onClick={toggleFullscreen} title="Fullscreen (F)" active={false}>
+            <IconBtn
+              onClick={toggleFullscreen}
+              title={isFullscreen ? "Exit fullscreen (F)" : "Fullscreen (F)"}
+              active={isFullscreen}
+            >
               <Maximize size={18} />
             </IconBtn>
           </div>
 
-          {/* Burger (like martinbuilding) */}
-          <button
-            onClick={() => setMenuOpen((o) => !o)}
-            className={`relative w-[52px] h-[52px] bg-green-400 flex items-center justify-center cursor-pointer ${menuOpen ? "active" : ""}`}
-            aria-label="Menu"
-          >
-            <span
-              ref={line1}
-              className={`absolute left-1/2 top-1/2 -translate-x-1/2 w-6 h-[2px] bg-[#242424] transition-all duration-300 ${
-                menuOpen ? "-rotate-45" : "-translate-y-[5px]"
-              }`}
-            />
-            <span
-              ref={line2}
-              className={`absolute left-1/2 top-1/2 -translate-x-1/2 w-6 h-[2px] bg-[#242424] transition-all duration-300 ${
-                menuOpen ? "rotate-45" : "translate-y-[5px]"
-              }`}
-            />
-          </button>
+          {/* Mode selection is already on the dashboard; show the menu in-game only. */}
+          {mode && (
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              className={`relative w-[52px] h-[52px] bg-green-400 flex items-center justify-center cursor-pointer ${menuOpen ? "active" : ""}`}
+              aria-label="Menu"
+              aria-expanded={menuOpen}
+              aria-controls="game-navigation"
+            >
+              <span
+                ref={line1}
+                className={`absolute left-1/2 top-1/2 -translate-x-1/2 w-6 h-[2px] bg-[#242424] transition-all duration-300 ${
+                  menuOpen ? "-rotate-45" : "-translate-y-[5px]"
+                }`}
+              />
+              <span
+                ref={line2}
+                className={`absolute left-1/2 top-1/2 -translate-x-1/2 w-6 h-[2px] bg-[#242424] transition-all duration-300 ${
+                  menuOpen ? "rotate-45" : "translate-y-[5px]"
+                }`}
+              />
+            </button>
+          )}
         </div>
       </header>
 
       {/* Fullscreen overlay menu */}
       <AnimatePresence>
-        {menuOpen && (
+        {menuOpen && mode && (
           <motion.div
+            id="game-navigation"
             className="fixed inset-0 z-50 flex"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -197,17 +219,13 @@ export default function Header({
                       </button>
                     </li>
                   ))}
-
-                  {/* Home link */}
                   <li>
                     <button
                       onClick={() => {
                         setMenuOpen(false);
                         onChangeMode("");
                       }}
-                      className={`group flex items-center gap-6 cursor-pointer transition-colors duration-300 ${
-                        mode === null ? "text-green-400" : "text-slate-100 hover:text-green-400"
-                      }`}
+                      className="group flex items-center gap-6 cursor-pointer text-slate-100 transition-colors duration-300 hover:text-green-400"
                     >
                       <span className="hidden sm:inline text-sm tracking-widest text-slate-600 w-8 shrink-0 group-hover:text-green-400/60">
                         00
@@ -221,13 +239,20 @@ export default function Header({
               </div>
             </div>
 
-            {/* Close / footer strip */}
-            <div className="md:hidden absolute top-0 right-0 m-4 flex gap-2">
-              <IconBtn onClick={toggleMute} title="Mute" active={false}>
-                {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-              </IconBtn>
-              <IconBtn onClick={onResetGame} title="Reset" active={false}>
-                <RotateCcw size={18} />
+            {/* Persistent close control stays reachable above the menu overlay. */}
+            <div className="absolute top-4 right-4 z-10 flex gap-2">
+              {mode && (
+                <div className="md:hidden flex gap-2">
+                  <IconBtn onClick={toggleMute} title="Mute" active={muted}>
+                    {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                  </IconBtn>
+                  <IconBtn onClick={onResetGame} title="Reset" active={false}>
+                    <RotateCcw size={18} />
+                  </IconBtn>
+                </div>
+              )}
+              <IconBtn onClick={() => setMenuOpen(false)} title="Tutup menu" active={false}>
+                <X size={18} />
               </IconBtn>
             </div>
           </motion.div>
@@ -260,6 +285,7 @@ function IconBtn({
     <button
       onClick={onClick}
       title={title}
+      aria-label={title}
       className={`p-2.5 rounded-lg border transition-colors cursor-pointer ${
         active
           ? "bg-green-400/20 text-green-400 border-green-400/50"

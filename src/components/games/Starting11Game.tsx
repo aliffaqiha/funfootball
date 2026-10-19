@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, useId } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, X, Sparkles, ChevronDown, ChevronRight, Loader2, ShieldAlert, Dices } from "lucide-react";
@@ -263,6 +263,8 @@ export default function Starting11Game() {
   const [randTick, setRandTick] = useState(0);
   const [lineup, setLineup] = useState<string[]>(() => FORMATIONS[0].positions.map((p) => p.id));
   const pitchRef = useRef<HTMLDivElement | null>(null);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+  const pickerTitleId = useId();
   const gachaTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const gachaLockedRef = useRef(false);
 
@@ -276,15 +278,46 @@ export default function Starting11Game() {
 
   useEffect(() => {
     if (!pickSlot) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPickSlot(null);
+    const panel = pickerRef.current;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusableSelector =
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const getFocusable = () =>
+      Array.from(panel?.querySelectorAll<HTMLElement>(focusableSelector) ?? []).filter(
+        (element) => element.getAttribute("aria-hidden") !== "true"
+      );
+    (getFocusable()[0] ?? panel)?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setPickSlot(null);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = getFocusable();
+      if (focusable.length === 0) {
+        event.preventDefault();
+        panel?.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !panel?.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !panel?.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
     };
-    window.addEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKeyDown);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
-      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onKeyDown);
       document.body.style.overflow = prev;
+      previousFocus?.focus();
     };
   }, [pickSlot]);
 
@@ -551,6 +584,13 @@ const fetchNominees = useCallback(
     setLineup(formation.positions.map((p) => p.id));
   };
 
+  const cancelGacha = () => {
+    const slotId = gacha?.slotId;
+    clearGachaTimers();
+    if (slotId) setSpinning((previous) => ({ ...previous, [slotId]: false }));
+    setGacha(null);
+  };
+
   const changeFormation = (id: string) => {
     if (id === formationId) {
       setFormationOpen(false);
@@ -799,6 +839,7 @@ const fetchNominees = useCallback(
         year={gacha?.year ?? null}
         title={gacha ? (gacha.year ? `Tahun ${gacha.year}` : gacha?.result?.name) : undefined}
         pool={pool}
+        onClose={cancelGacha}
       />
 
       {/* nominee picker modal: 4 candidates (GK/DEF/MID/FWD) matching club+year */}
@@ -814,6 +855,11 @@ const fetchNominees = useCallback(
                 onClick={() => setPickSlot(null)}
               >
             <motion.div
+              ref={pickerRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={pickerTitleId}
+              tabIndex={-1}
               initial={{ scale: 0.96, y: 24 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.96, y: 24 }}
@@ -823,7 +869,7 @@ const fetchNominees = useCallback(
             >
               <div className="flex items-start justify-between gap-3 pb-4 border-b border-slate-700/60 shrink-0">
                 <div className="min-w-0">
-                  <h3 className="text-lg sm:text-xl font-black text-slate-100">
+                  <h3 id={pickerTitleId} className="text-lg sm:text-xl font-black text-slate-100">
                     Pilih Pemain
                   </h3>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
