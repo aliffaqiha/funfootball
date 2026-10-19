@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Clock, ChevronRight, Loader2, RotateCcw, ShieldAlert } from "lucide-react";
+import { Check, Clock, ChevronRight, Loader2, RotateCcw, ShieldAlert, X } from "lucide-react";
 import players from "@/data/players.json";
 import clubs from "@/data/clubs-nations.json";
 import { playCorrect, playSpin } from "@/lib/sound";
@@ -103,12 +103,15 @@ const MAX_TRANSFERS = 9;
 
 interface TransferQuizGameProps {
   hostView: boolean;
+  onCorrect: () => void;
+  onWrong: () => void;
 }
 
-export default function TransferQuizGame({ hostView }: TransferQuizGameProps) {
+export default function TransferQuizGame({ hostView, onCorrect, onWrong }: TransferQuizGameProps) {
   const [round, setRound] = useState(0);
   const [transfers, setTransfers] = useState(0);
   const [revealed, setRevealed] = useState(false);
+  const [answerResult, setAnswerResult] = useState<"correct" | "wrong" | null>(null);
   const [quiz, setQuiz] = useState<QuizPlayer | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -116,6 +119,7 @@ export default function TransferQuizGame({ hostView }: TransferQuizGameProps) {
   const requestIdRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
   const roundRef = useRef(0);
+  const answerResolvedRef = useRef(false);
 
   const nextQuiz = useCallback(async () => {
     abortRef.current?.abort();
@@ -124,10 +128,12 @@ export default function TransferQuizGame({ hostView }: TransferQuizGameProps) {
     const requestId = ++requestIdRef.current;
     const nextRound = roundRef.current + 1;
     roundRef.current = nextRound;
+    answerResolvedRef.current = false;
     setLoading(true);
     setErr(null);
     setTransfers(0);
     setRevealed(false);
+    setAnswerResult(null);
     setRound(nextRound);
     try {
       const params = new URLSearchParams();
@@ -168,13 +174,25 @@ export default function TransferQuizGame({ hostView }: TransferQuizGameProps) {
 
   const revealPlayer = () => {
     setRevealed(true);
-    playCorrect();
-    fireConfetti();
   };
 
   const reset = () => {
+    if (answerResolvedRef.current) return;
     setTransfers(0);
     setRevealed(false);
+  };
+
+  const recordAnswer = (result: "correct" | "wrong") => {
+    if (!revealed || answerResolvedRef.current) return;
+    answerResolvedRef.current = true;
+    setAnswerResult(result);
+    if (result === "correct") {
+      playCorrect();
+      fireConfetti();
+      onCorrect();
+    } else {
+      onWrong();
+    }
   };
 
   const visible = player.transfers.slice(0, transfers);
@@ -185,7 +203,7 @@ export default function TransferQuizGame({ hostView }: TransferQuizGameProps) {
         <h2 className="text-2xl font-black text-slate-100 flex items-center gap-2">
           <Clock className="text-green-400" /> Transfer Quiz
         </h2>
-        <Button variant="secondary" size="sm" onClick={reset} disabled={loading}>
+        <Button variant="secondary" size="sm" onClick={reset} disabled={loading || answerResult !== null}>
           <RotateCcw size={14} /> Reset Round
         </Button>
       </div>
@@ -271,6 +289,20 @@ export default function TransferQuizGame({ hostView }: TransferQuizGameProps) {
             <div className="mt-3 text-xl text-slate-300 font-bold">
               {player.nationality} • {player.position}
             </div>
+            {answerResult === null ? (
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Button size="lg" variant="success" onClick={() => recordAnswer("correct")}>
+                  <Check size={20} /> Benar (+10)
+                </Button>
+                <Button size="lg" variant="danger" onClick={() => recordAnswer("wrong")}>
+                  <X size={20} /> Salah (0)
+                </Button>
+              </div>
+            ) : (
+              <p className={`mt-5 text-lg font-black ${answerResult === "correct" ? "text-green-300" : "text-red-300"}`} role="status">
+                {answerResult === "correct" ? "BENAR — +10 poin dicatat" : "SALAH — ronde dicatat"}
+              </p>
+            )}
           </motion.div>
         ) : (
           !loading && (
@@ -286,7 +318,7 @@ export default function TransferQuizGame({ hostView }: TransferQuizGameProps) {
         )}
       </div>
 
-      {!loading && revealed && (
+      {!loading && revealed && answerResult !== null && (
         <div className="flex justify-center">
           <Button size="lg" variant="secondary" onClick={nextQuiz}>
             <RotateCcw size={20} /> Pemain Berikutnya
