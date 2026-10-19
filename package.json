@@ -13,7 +13,8 @@
     "db:import": "tsx import-football-data.ts",
     "db:curate": "tsx prisma/curate.ts",
     "db:sync11": "tsx prisma/sync-starting11.ts",
-    "db:import-elite": "tsx prisma/import-elite.ts"
+    "db:import-elite": "tsx prisma/import-elite.ts",
+    "db:build-stints": "tsx prisma/build-stints.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

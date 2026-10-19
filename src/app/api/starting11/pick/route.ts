@@ -1,4 +1,6 @@
 import { getDb } from "@/lib/db";
+import staticPool from "@/data/starting11-pool.json";
+import { starting11FeaturedPlayerFilter } from "@/lib/starting11-featured";
 
 const ROLES = [
   { role: "GK", pos: "Goalkeeper", label: "Kiper" },
@@ -26,6 +28,7 @@ async function pickOne(
       by: ["name"],
       where: {
         clubId,
+        isFeatured: true,
         position: pos,
         fromYear: { lte: year },
         toYear: { gte: year },
@@ -39,7 +42,12 @@ async function pickOne(
   }
 
   const rows = await db.player.findMany({
-    where: { clubId, position: pos, name: { notIn: ["", "Unknown Player"] } },
+    where: {
+      clubId,
+      position: pos,
+      name: { notIn: ["", "Unknown Player"] },
+      AND: [starting11FeaturedPlayerFilter()],
+    },
     select: { name: true },
     distinct: ["name"],
   });
@@ -55,10 +63,14 @@ export async function GET(request: Request) {
   const clubParam = url.searchParams.get("club");
   const yearParam = url.searchParams.get("year");
   const year = yearParam ? Number(yearParam) : null;
-  const yearValid = year !== null && Number.isFinite(year);
+  const supportedYears: number[] = staticPool.years;
+  const yearValid = year !== null && Number.isInteger(year) && supportedYears.includes(year);
 
   if (!clubParam) {
     return Response.json({ error: "Parameter club wajib diisi" }, { status: 400 });
+  }
+  if (yearParam !== null && !yearValid) {
+    return Response.json({ error: "Tahun tidak tersedia" }, { status: 400 });
   }
 
   const club = await db.club.findFirst({

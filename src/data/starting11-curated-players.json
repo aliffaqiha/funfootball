@@ -1,0 +1,24 @@
+{
+  "description": "Manual Starting 11 reputation overrides, keyed by Transfermarkt player ID. Keep IDs canonical to players.csv; add only players whose reputation is not reflected by the statistical threshold.",
+  "playerIds": [
+    28003,
+    8198,
+    342229,
+    68290,
+    27992,
+    225083,
+    148455,
+    88755,
+    25557,
+    38253,
+    418560,
+    132098,
+    39381,
+    200512,
+    59016,
+    122153,
+    3455,
+    29241,
+    60889
+  ]
+}

@@ -85,10 +85,12 @@ model Stint {
   transfermarktId Int
   name           String
   position       String?
+  isFeatured     Boolean @default(false)
   fromYear       Int
   toYear         Int
 
   @@index([clubId, fromYear, toYear])
+  @@index([clubId, isFeatured, fromYear, toYear])
   @@index([clubId, position, fromYear])
 }
 

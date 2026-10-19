@@ -4,6 +4,8 @@ import { join } from 'node:path'
 import { parse } from 'csv-parse/sync'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '../src/generated/prisma/client'
+import pool from '../src/data/starting11-pool.json'
+import { isStarting11FeaturedPlayer } from '../src/lib/starting11-featured'
 
 const CONNECTION_STRING = process.env.DATABASE_URL
 if (!CONNECTION_STRING) {
@@ -14,6 +16,8 @@ if (!CONNECTION_STRING) {
 const PLAYERS_CSV = join(process.cwd(), 'data', 'players.csv')
 const TRANSFERS_CSV = join(process.cwd(), 'data', 'transfers.csv')
 const BATCH = 500
+const MIN_YEAR = Math.min(...pool.years)
+const MAX_YEAR = Math.max(...pool.years)
 type Row = Record<string, string | undefined>
 
 // TM club id -> pool club key (verified vs players.current_club_id / transfers club ids)
@@ -87,9 +91,18 @@ async function main() {
     const clubIdByKey = new Map(clubs.map((c) => [c.key, c.id]))
 
     const poolByTmId = new Map<number, { key: string; name: string; position: string | null; lastSeason: number | null; currentClubId: number | null }>()
+    let excludedPlayers = 0
     for (const r of playerRows) {
       const tmId = toNumber(r.player_id)
       if (tmId === null) continue
+      if (!isStarting11FeaturedPlayer({
+        transfermarktId: tmId,
+        internationalCaps: toNumber(r.international_caps),
+        highestMarketValue: toNumber(r.highest_market_value_in_eur),
+      })) {
+        excludedPlayers++
+        continue
+      }
       poolByTmId.set(tmId, {
         key: TM_ID_TO_KEY[tmId] ?? '',
         name: r.name ?? 'Unknown Player',
@@ -104,16 +117,21 @@ async function main() {
       const pid = toNumber(t.player_id)
       if (pid === null) continue
       const list = transfersByPlayer.get(pid) ?? []
+      const parsedSeason = seasonStart(t.transfer_season)
+      const parsedDateYear = dateYear(t.transfer_date)
+      // Ignore future/malformed feed rows outside the static game timeline.
+      if (parsedSeason !== null && parsedSeason > MAX_YEAR) continue
+      if (parsedDateYear !== null && parsedDateYear > MAX_YEAR + 1) continue
       list.push({
-        seasonStart: seasonStart(t.transfer_season),
-        dateYear: dateYear(t.transfer_date),
+        seasonStart: parsedSeason,
+        dateYear: parsedDateYear,
         fromId: toNumber(t.from_club_id),
         toId: toNumber(t.to_club_id),
       })
       transfersByPlayer.set(pid, list)
     }
 
-    const stints: Array<{ clubId: string; transfermarktId: number; name: string; position: string | null; fromYear: number; toYear: number }> = []
+    const stints: Array<{ clubId: string; transfermarktId: number; name: string; position: string | null; isFeatured: boolean; fromYear: number; toYear: number }> = []
 
     for (const [tmId, player] of poolByTmId) {
       const playerTransfers = transfersByPlayer.get(tmId) ?? []
@@ -137,7 +155,7 @@ async function main() {
         if (first.fromId !== null) {
           const joinYear = first.seasonStart ?? first.dateYear
           if (joinYear !== null) {
-            intervals.push({ clubTmId: first.fromId, from: joinYear, to: joinYear })
+            intervals.push({ clubTmId: first.fromId, from: joinYear - 1, to: joinYear - 1 })
           }
         }
         for (let i = 0; i < playerTransfers.length; i++) {
@@ -149,17 +167,17 @@ async function main() {
 
           let endYear: number
           if (next) {
-            endYear = next.dateYear ?? (next.seasonStart !== null ? next.seasonStart : startYear + 1)
-            if (endYear <= startYear) endYear = startYear + 1
+            const nextSeason = next.seasonStart ?? next.dateYear
+            // The next club owns its transfer season; the old club ends before it.
+            endYear = nextSeason !== null ? nextSeason - 1 : startYear
           } else {
             if (t.toId === player.currentClubId && player.lastSeason !== null) {
               endYear = player.lastSeason
             } else {
-              const seasonEnd = startSeason !== null ? startSeason + 1 : startYear + 1
-              endYear = seasonEnd
+              endYear = startYear
             }
           }
-          if (endYear < startYear) endYear = startYear
+          if (endYear < startYear) continue
           intervals.push({ clubTmId: t.toId, from: startYear, to: endYear })
         }
       }
@@ -178,34 +196,44 @@ async function main() {
         const clubId = clubIdByKey.get(key)
         if (!clubId) continue
         for (const iv of merge(list)) {
-          if (iv.to < iv.from) continue
+          const fromYear = Math.max(iv.from, MIN_YEAR)
+          const toYear = Math.min(iv.to, MAX_YEAR)
+          if (toYear < fromYear) continue
           stints.push({
             clubId,
             transfermarktId: tmId,
             name: player.name,
             position: player.position,
-            fromYear: iv.from,
-            toYear: iv.to,
+            isFeatured: true,
+            fromYear,
+            toYear,
           })
         }
       }
     }
 
-    await prisma.stint.deleteMany({})
-    let written = 0
-    for (let i = 0; i < stints.length; i += BATCH) {
-      const chunk = stints.slice(i, i + BATCH)
-      await prisma.stint.createMany({ data: chunk })
-      written += chunk.length
-      if (written % 10000 < BATCH) console.log(`[stints] ${written}/${stints.length}`)
+    if (stints.length === 0) {
+      throw new Error('Tidak ada stint featured yang terbentuk; data lama dipertahankan.')
     }
+
+    let written = 0
+    await prisma.$transaction(async (tx) => {
+      await tx.stint.deleteMany({})
+      for (let i = 0; i < stints.length; i += BATCH) {
+        const chunk = stints.slice(i, i + BATCH)
+        await tx.stint.createMany({ data: chunk })
+        written += chunk.length
+        if (written % 10000 < BATCH) console.log(`[stints] ${written}/${stints.length}`)
+      }
+    }, { maxWait: 10_000, timeout: 300_000 })
     console.log(`[stints] selesai: ${written} baris.`)
+    console.log(`[stints] pemain featured: ${poolByTmId.size}; dikecualikan dari kandidat: ${excludedPlayers}`)
 
     // coverage report
-    const years = Array.from({ length: 14 }, (_, i) => 2012 + i)
+    const years = pool.years
     const positions = ['Goalkeeper', 'Defender', 'Midfield', 'Attack']
     const allStints = await prisma.stint.findMany({
-      where: { clubId: { in: clubs.map((c) => c.id) } },
+      where: { clubId: { in: clubs.map((c) => c.id) }, isFeatured: true },
       select: { clubId: true, position: true, fromYear: true, toYear: true },
     })
     const byClub = new Map(clubs.map((c) => [c.id, { key: c.key, stints: [] as typeof allStints }]))
