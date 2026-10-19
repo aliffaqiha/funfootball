@@ -69,27 +69,27 @@ export function initSound() {
 
 export function playSpin() {
   if (muted) return;
-  getSound("spin", "https://assets.mixkit.co/active_storage/sfx/2013/2013.wav", 0.6)?.play();
+  getSound("spin", "/sounds/spin.wav", 0.6)?.play();
 }
 
 export function playCorrect() {
   if (muted) return;
-  getSound("correct", "https://assets.mixkit.co/active_storage/sfx/2091/2091.wav", 0.7)?.play();
+  getSound("correct", "/sounds/correct.wav", 0.7)?.play();
 }
 
 export function playWrong() {
   if (muted) return;
-  getSound("wrong", "https://assets.mixkit.co/active_storage/sfx/1804/1804.wav", 0.7)?.play();
+  getSound("wrong", "/sounds/wrong.wav", 0.7)?.play();
 }
 
 export function playTimerTick() {
   if (muted) return;
-  getSound("tick", "https://assets.mixkit.co/active_storage/sfx/2229/2229.wav", 0.5)?.play();
+  getSound("tick", "/sounds/tick.wav", 0.5)?.play();
 }
 
 export function playCelebration() {
   if (muted) return;
-  getSound("celebrate", "https://assets.mixkit.co/active_storage/sfx/2019/2019.wav", 0.8)?.play();
+  getSound("celebrate", "/sounds/celebrate.wav", 0.8)?.play();
 }
 
 export function stopAll() {

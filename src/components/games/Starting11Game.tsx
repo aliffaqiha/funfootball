@@ -239,7 +239,11 @@ function posLeftNum(col: number): number {
 /*  Component                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export default function Starting11Game() {
+interface Starting11GameProps {
+  hostView: boolean;
+}
+
+export default function Starting11Game({ hostView }: Starting11GameProps) {
   const [mounted, setMounted] = useState(false);
   const [formationId, setFormationId] = useState("4-3-3");
   const [formationOpen, setFormationOpen] = useState(false);
@@ -264,9 +268,24 @@ export default function Starting11Game() {
   const [lineup, setLineup] = useState<string[]>(() => FORMATIONS[0].positions.map((p) => p.id));
   const pitchRef = useRef<HTMLDivElement | null>(null);
   const pickerRef = useRef<HTMLDivElement | null>(null);
+  const formationDropdownRef = useRef<HTMLDivElement | null>(null);
   const pickerTitleId = useId();
   const gachaTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const gachaLockedRef = useRef(false);
+
+  useEffect(() => {
+    if (!formationOpen) return;
+
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && !formationDropdownRef.current?.contains(target)) {
+        setFormationOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
+  }, [formationOpen]);
 
   const clearGachaTimers = useCallback(() => {
     gachaTimersRef.current.forEach(clearTimeout);
@@ -631,7 +650,7 @@ const fetchNominees = useCallback(
           <Button size="sm" variant="danger" onClick={resetAll}>
             <X size={16} /> Reset
           </Button>
-          <div className="relative">
+          <div ref={formationDropdownRef} className="relative">
             <button
               onClick={() => setFormationOpen((o) => !o)}
               className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 border border-slate-600 rounded-xl text-slate-100 font-bold text-sm hover:border-green-400 transition-colors cursor-pointer"
@@ -786,6 +805,11 @@ const fetchNominees = useCallback(
                             >
                               {clubLabel(club?.name || "")}
                             </span>
+                            {hostView && playerState.year !== null && (
+                              <span className="text-[7px] text-amber-300 font-black leading-none">
+                                {playerState.year}
+                              </span>
+                            )}
                           </div>
                           <div className="relative z-10 w-full px-1 pb-1 mt-auto">
                             <motion.span

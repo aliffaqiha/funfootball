@@ -65,7 +65,7 @@ export default function GameExperience() {
                   transition={{ duration: 0.2 }}
                 >
                   {mode === "trivia" && <TriviaGame {...shortcutProps} />}
-                  {mode === "starting11" && <Starting11Game />}
+                  {mode === "starting11" && <Starting11Game hostView={hostView} />}
                   {mode === "transfer" && <TransferQuizGame hostView={hostView} />}
                   {mode === "guess" && <GuessPlayerGame {...shortcutProps} />}
                 </motion.div>

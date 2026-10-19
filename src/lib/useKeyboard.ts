@@ -9,9 +9,11 @@ export function useKeyboardShortcuts(handlers: Record<string, KeyHandler>) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target;
+      if (event.isComposing) return;
       if (
-        target instanceof HTMLElement &&
-        (target.isContentEditable || target.closest("input, textarea, select, [contenteditable='true']"))
+        target instanceof Element &&
+        (target.closest("input, textarea, select, [role='textbox'], [contenteditable]:not([contenteditable='false'])") ||
+          (target instanceof HTMLElement && target.isContentEditable))
       ) {
         return;
       }
