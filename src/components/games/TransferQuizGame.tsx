@@ -165,6 +165,7 @@ export default function TransferQuizGame({ hostView, onCorrect, onWrong }: Trans
   }, [nextQuiz]);
 
   const player = quiz ?? players[round % players.length];
+  const totalClubs = "totalClubs" in player ? player.totalClubs : player.transfers.length;
 
   const nextTransfer = () => {
     if (transfers < player.transfers.length && transfers < MAX_TRANSFERS) {
@@ -228,9 +229,9 @@ export default function TransferQuizGame({ hostView, onCorrect, onWrong }: Trans
           </div>
         ) : (
           <div className="space-y-3">
-            {(player.totalClubs ?? player.transfers.length) > player.transfers.length && (
+            {totalClubs !== undefined && totalClubs > player.transfers.length && (
               <p className="text-center text-xs text-slate-400" role="note">
-                Menampilkan {player.transfers.length} dari {player.totalClubs} klub dalam riwayat.
+                Menampilkan {player.transfers.length} dari {totalClubs} klub dalam riwayat.
               </p>
             )}
             {player.transfers.slice(0, MAX_TRANSFERS).map((t, i) => {
