@@ -26,15 +26,15 @@ const GAMES: { id: GameMode; num: string; label: string; desc: string; icon: Rea
 
 export default function HomeLanding({ onSelect }: HomeLandingProps) {
   return (
-    <div className="relative min-h-screen bg-[#242424] text-white overflow-hidden">
-      {/* Subtle stadium backdrop */}
+    <div className="relative min-h-[calc(100svh-100px)] bg-[#242424] text-white overflow-hidden">
+      {/* CSS backdrop keeps the dashboard usable without an external image request. */}
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-40"
-        style={{ backgroundImage: "url(https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1800&q=60)" }}
+        className="absolute inset-0"
+        style={{ backgroundImage: "radial-gradient(ellipse at 50% 100%, rgba(34,197,94,.14), transparent 55%), linear-gradient(160deg, #303030, #242424 65%)" }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-[#242424]/70 via-[#242424]/85 to-[#242424]" />
 
-      <div className="relative z-10 flex flex-col min-h-screen max-w-[1400px] mx-auto px-6 md:px-16 py-6 md:py-0">
+      <div className="relative z-10 flex flex-col min-h-[calc(100svh-100px)] max-w-[1400px] mx-auto px-6 md:px-16 py-6 md:py-0">
         {/* Split hero */}
         <div className="flex flex-col lg:flex-row flex-1 gap-10 lg:gap-0 items-center lg:items-stretch">
           {/* Left: visual + intro */}
@@ -100,7 +100,7 @@ export default function HomeLanding({ onSelect }: HomeLandingProps) {
                   </span>
                   <div>
                     <div className="flex items-baseline gap-3">
-                      <span className="font-sans text-xs tracking-widest text-slate-600">
+                      <span className="font-sans text-xs tracking-widest text-slate-400">
                         {g.num}
                       </span>
                       <span className="font-serif font-bold text-2xl md:text-4xl text-white group-hover:text-green-400 transition-colors">
@@ -122,7 +122,7 @@ export default function HomeLanding({ onSelect }: HomeLandingProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
-              className="hidden md:block text-right font-sans text-xs uppercase tracking-[0.4em] text-slate-600 mt-8"
+              className="hidden md:block text-right font-sans text-xs uppercase tracking-[0.4em] text-slate-400 mt-8"
             >
               — Press a mode to start the show
             </motion.p>
@@ -134,13 +134,13 @@ export default function HomeLanding({ onSelect }: HomeLandingProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
-          className="py-8 border-t border-[#3a3a3a] mt-auto flex flex-wrap justify-between items-center gap-4 text-xs uppercase tracking-[0.3em] text-slate-500 font-sans"
+          className="py-8 border-t border-[#3a3a3a] mt-auto flex flex-wrap justify-between items-center gap-4 text-xs uppercase tracking-[0.3em] text-slate-400 font-sans"
         >
           <span className="flex items-center gap-2">
             <Trophy size={14} className="text-green-400" /> Football Party Host
           </span>
           <span className="hidden md:inline">Host Panel • Scoreboard • Terintegrasi</span>
-          <span className="text-slate-600">© 2026</span>
+          <span className="text-slate-400">© 2026</span>
         </motion.div>
       </div>
     </div>
@@ -155,7 +155,7 @@ function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; la
       </span>
       <div>
         <div className="font-serif font-bold text-2xl leading-none text-white">{value}</div>
-        <div className="font-sans text-[10px] uppercase tracking-widest text-slate-500 mt-1">
+        <div className="font-sans text-[10px] uppercase tracking-widest text-slate-400 mt-1">
           {label}
         </div>
       </div>

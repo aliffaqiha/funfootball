@@ -32,7 +32,9 @@ export default function Scoreboard() {
       </div>
 
       <div className="p-3 border-b border-slate-700 flex gap-2">
+        <label htmlFor="scoreboard-player-name" className="sr-only">Nama pemain atau tim</label>
         <input
+          id="scoreboard-player-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => {
@@ -46,6 +48,7 @@ export default function Scoreboard() {
         />
         <Button
           size="sm"
+          aria-label="Tambah pemain atau tim"
           onClick={() => {
             addPlayer(name);
             setName("");
@@ -86,30 +89,38 @@ export default function Scoreboard() {
                 {state.activeEntryId === entry.id ? "Aktif" : "Pilih"}
               </button>
               <button
+                type="button"
                 onClick={() => {
                   updateScore(entry.id, 10);
                   playCorrect();
                 }}
                 className="px-2 py-1 bg-green-500/20 text-green-400 font-bold rounded-lg hover:bg-green-500/40 cursor-pointer text-sm"
+                aria-label={`Tambah 10 poin untuk ${entry.name}`}
               >
                 +10
               </button>
               <button
+                type="button"
                 onClick={() => updateScore(entry.id, 5)}
                 className="px-2 py-1 bg-sky-500/20 text-sky-400 font-bold rounded-lg hover:bg-sky-500/40 cursor-pointer text-sm"
+                aria-label={`Tambah 5 poin untuk ${entry.name}`}
               >
                 +5
               </button>
               <button
+                type="button"
                 onClick={() => updateScore(entry.id, -5)}
                 className="px-2 py-1 bg-orange-500/20 text-orange-400 font-bold rounded-lg hover:bg-orange-500/40 cursor-pointer text-sm"
+                aria-label={`Kurangi 5 poin dari ${entry.name}`}
               >
                 -5
               </button>
               <button
+                type="button"
                 onClick={() => removePlayer(entry.id)}
                 className="px-2 py-1 text-slate-500 hover:text-red-400 cursor-pointer"
                 title="Hapus pemain"
+                aria-label={`Hapus ${entry.name}`}
               >
                 <Trash2 size={16} />
               </button>

@@ -1,6 +1,7 @@
 import { getDb } from "@/lib/db";
 import staticPool from "@/data/starting11-pool.json";
 import { starting11FeaturedPlayerFilter } from "@/lib/starting11-featured";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 const ROLES = [
   { role: "GK", pos: "Goalkeeper", label: "Kiper" },
@@ -18,7 +19,6 @@ export interface PickNominee {
 
 async function pickOne(
   db: ReturnType<typeof getDb>,
-  role: "GK" | "DEF" | "MID" | "FWD",
   pos: string,
   clubId: string,
   year: number | null
@@ -41,23 +41,24 @@ async function pickOne(
     return null;
   }
 
+  const where = {
+    clubId,
+    position: pos,
+    name: { notIn: ["", "Unknown Player"] },
+    AND: [starting11FeaturedPlayerFilter()],
+  };
   const rows = await db.player.findMany({
-    where: {
-      clubId,
-      position: pos,
-      name: { notIn: ["", "Unknown Player"] },
-      AND: [starting11FeaturedPlayerFilter()],
-    },
-    select: { name: true },
+    where,
     distinct: ["name"],
+    select: { name: true },
   });
-  if (rows.length > 0) {
-    return { name: rows[Math.floor(Math.random() * rows.length)].name, from: "club" };
-  }
-  return null;
+  const row = rows[Math.floor(Math.random() * rows.length)];
+  return row ? { name: row.name, from: "club" } : null;
 }
 
 export async function GET(request: Request) {
+  const rate = rateLimit(request, "starting11-pick", 30, 60_000);
+  if (!rate.allowed) return rateLimitResponse(rate.retryAfter);
   const db = getDb();
   const url = new URL(request.url);
   const clubParam = url.searchParams.get("club");
@@ -88,7 +89,7 @@ export async function GET(request: Request) {
   }
 
   const nominees = await Promise.all(ROLES.map(async (r): Promise<PickNominee> => {
-    const picked = await pickOne(db, r.role, r.pos, club.id, yearValid ? year : null);
+    const picked = await pickOne(db, r.pos, club.id, yearValid ? year : null);
     return {
       role: r.role,
       label: r.label,

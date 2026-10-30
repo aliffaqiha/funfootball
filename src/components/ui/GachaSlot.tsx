@@ -30,6 +30,10 @@ export default function GachaSlot({
 
   return (
     <div
+      role="status"
+      aria-live={spinning ? "off" : "polite"}
+      aria-atomic="true"
+      aria-label={spinning ? "Sedang mengacak pemain" : result !== null ? `Hasil: ${result}` : "Belum ada hasil"}
       className="relative overflow-hidden rounded-xl border-2 border-slate-600 bg-slate-950 flex items-center justify-center"
       style={{ width: size, height: size }}
     >

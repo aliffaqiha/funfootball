@@ -104,7 +104,7 @@ export default function Header({
               <span className="block font-serif font-bold text-lg md:text-2xl text-slate-100 tracking-tight leading-none">
                 Football <span className="text-green-400">Party</span>
               </span>
-              <span className="block text-[10px] uppercase tracking-[0.4em] text-slate-500 mt-1">
+              <span className="block text-[10px] uppercase tracking-[0.4em] text-slate-400 mt-1">
                 Game Show Host
               </span>
             </div>
@@ -131,6 +131,16 @@ export default function Header({
               <Maximize size={18} />
             </IconBtn>
           </div>
+          {!mode && (
+            <div className="md:hidden flex items-center gap-1.5">
+              <IconBtn onClick={toggleMute} title="Mute (M)" active={muted}>
+                {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+              </IconBtn>
+              <IconBtn onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"} active={isFullscreen}>
+                <Maximize size={18} />
+              </IconBtn>
+            </div>
+          )}
 
           {/* Mode selection is already on the dashboard; show the menu in-game only. */}
           {mode && (
@@ -173,8 +183,8 @@ export default function Header({
             <div className="w-2/5 hidden lg:flex flex-col justify-end bg-[#242424] relative">
               {/* stadium image block */}
               <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: "url(https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1200&q=60)" }}
+                className="absolute inset-0"
+                style={{ backgroundImage: "radial-gradient(ellipse at 50% 100%, rgba(34,197,94,.18), transparent 55%), linear-gradient(160deg, #303030, #242424 65%)" }}
               />
               <div className="absolute inset-0 bg-[#242424]/70" />
               <div className="relative p-16 pb-12">
@@ -195,7 +205,7 @@ export default function Header({
               }}
             >
               <div className="w-full">
-                <div className="hidden md:block mb-10 text-[11px] uppercase tracking-[0.5em] text-slate-500">
+                <div className="hidden md:block mb-10 text-[11px] uppercase tracking-[0.5em] text-slate-400">
                   — Choose a Game Mode
                 </div>
                 <ul className="flex flex-col gap-1">
@@ -207,7 +217,7 @@ export default function Header({
                           mode === n.id ? "text-green-400" : "text-slate-100 hover:text-green-400"
                         }`}
                       >
-                        <span className="hidden sm:inline text-sm tracking-widest text-slate-600 w-8 shrink-0 group-hover:text-green-400/60">
+                        <span className="hidden sm:inline text-sm tracking-widest text-slate-400 w-8 shrink-0 group-hover:text-green-400/60">
                           {n.num}
                         </span>
                         <span className="font-serif font-bold text-[2.6rem] md:text-[4rem] leading-tight">
@@ -227,7 +237,7 @@ export default function Header({
                       }}
                       className="group flex items-center gap-6 cursor-pointer text-slate-100 transition-colors duration-300 hover:text-green-400"
                     >
-                      <span className="hidden sm:inline text-sm tracking-widest text-slate-600 w-8 shrink-0 group-hover:text-green-400/60">
+                      <span className="hidden sm:inline text-sm tracking-widest text-slate-400 w-8 shrink-0 group-hover:text-green-400/60">
                         00
                       </span>
                       <span className="font-serif font-bold text-[2.6rem] md:text-[4rem] leading-tight">
@@ -246,9 +256,13 @@ export default function Header({
                   <IconBtn onClick={toggleMute} title="Mute" active={muted}>
                     {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
                   </IconBtn>
-                  <IconBtn onClick={onResetGame} title="Reset" active={false}>
-                    <RotateCcw size={18} />
+                  <IconBtn onClick={onToggleHostView} title="Host View" active={hostView}>
+                    {hostView ? <Eye size={18} /> : <EyeOff size={18} />}
                   </IconBtn>
+                  <IconBtn onClick={toggleFullscreen} title={isFullscreen ? "Exit fullscreen" : "Fullscreen"} active={isFullscreen}>
+                    <Maximize size={18} />
+                  </IconBtn>
+                  <IconBtn onClick={onResetGame} title="Reset" active={false}><RotateCcw size={18} /></IconBtn>
                 </div>
               )}
               <IconBtn onClick={() => setMenuOpen(false)} title="Tutup menu" active={false}>
@@ -263,7 +277,7 @@ export default function Header({
       {hostView && mode && (
         <div className="px-8 pb-3 -mt-3 text-xs font-bold text-amber-400 flex items-center gap-2">
           <Eye size={14} /> HOST VIEW AKTIF — jawaban terlihat.
-          <span className="text-slate-500">(Game ke-{gameKey})</span>
+          <span className="text-slate-400">(Game ke-{gameKey})</span>
         </div>
       )}
     </>

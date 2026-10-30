@@ -64,5 +64,9 @@ export async function GET() {
     })),
   };
 
-  return Response.json(pool);
+  return Response.json(pool, {
+    headers: {
+      "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=600",
+    },
+  });
 }

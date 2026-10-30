@@ -23,6 +23,7 @@ export default function Button({
   size = "md",
   children,
   className = "",
+  type = "button",
   ...props
 }: ButtonProps) {
   const sizes =
@@ -35,6 +36,7 @@ export default function Button({
           : "px-4 py-3 text-base rounded-xl";
   return (
     <button
+      type={type}
       className={`border font-bold tracking-wide shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95 hover:scale-[1.03] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 ${sizes} ${variantClasses[variant]} ${className}`}
       {...props}
     >

@@ -59,6 +59,7 @@ model Player {
 
   @@index([clubId])
   @@index([countryId])
+  @@index([highestMarketValue])
 }
 
 model Transfer {

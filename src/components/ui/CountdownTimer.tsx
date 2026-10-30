@@ -57,6 +57,9 @@ export default function CountdownTimer({
   return (
     <div className="flex flex-col items-center gap-1">
       <motion.div
+        role="timer"
+        aria-label={`${remaining} detik tersisa`}
+        aria-live={danger ? "assertive" : "off"}
         key={remaining}
         initial={{ scale: 1.3 }}
         animate={{ scale: 1 }}
@@ -64,7 +67,15 @@ export default function CountdownTimer({
       >
         {remaining}
       </motion.div>
-      <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+      <div
+        role="progressbar"
+        aria-label="Waktu tersisa"
+        aria-valuemin={0}
+        aria-valuemax={Math.max(0, seconds)}
+        aria-valuenow={Math.min(Math.max(0, remaining), Math.max(0, seconds))}
+        aria-valuetext={`${remaining} detik tersisa`}
+        className="w-full h-2 bg-slate-700 rounded-full overflow-hidden"
+      >
         <motion.div
           className={`h-full ${danger ? "bg-red-500" : "bg-green-400"}`}
           initial={false}

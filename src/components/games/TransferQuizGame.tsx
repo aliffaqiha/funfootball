@@ -22,6 +22,7 @@ interface QuizPlayer {
   nationality: string | null;
   position: string | null;
   transfers: QuizTransfer[];
+  totalClubs?: number;
 }
 
 const clubInitials: Record<string, string> = {
@@ -227,6 +228,11 @@ export default function TransferQuizGame({ hostView, onCorrect, onWrong }: Trans
           </div>
         ) : (
           <div className="space-y-3">
+            {(player.totalClubs ?? player.transfers.length) > player.transfers.length && (
+              <p className="text-center text-xs text-slate-400" role="note">
+                Menampilkan {player.transfers.length} dari {player.totalClubs} klub dalam riwayat.
+              </p>
+            )}
             {player.transfers.slice(0, MAX_TRANSFERS).map((t, i) => {
               const isRevealed = i < visible.length;
               const isLastRevealed = i === visible.length - 1 && isRevealed;

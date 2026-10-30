@@ -1,4 +1,5 @@
 import { getDb } from "@/lib/db";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 interface TransferRow {
   club: string;
@@ -13,6 +14,7 @@ interface QuizPlayer {
   position: string | null;
   weight: number;
   transfers: TransferRow[];
+  totalClubs: number;
 }
 
 interface PlayerTransfer {
@@ -102,7 +104,7 @@ async function loadPool(): Promise<QuizPlayer[]> {
   const pool: QuizPlayer[] = [];
   for (const p of players) {
     const path = cleanPath(p.transfers);
-    if (path.length < 3 || path.length > 9) continue;
+    if (path.length < 3) continue;
     const [firstName, ...rest] = p.name.split(" ");
     pool.push({
       id: p.id,
@@ -111,7 +113,8 @@ async function loadPool(): Promise<QuizPlayer[]> {
       nationality: p.nationality,
       position: p.position ? (POS_MAP[p.position] ?? p.position) : null,
       weight: Math.pow(p.highestMarketValue ?? 0, 0.3),
-      transfers: path,
+      transfers: path.slice(0, 9),
+      totalClubs: path.length,
     });
   }
 
@@ -146,8 +149,10 @@ function pickWeighted(candidates: QuizPlayer[]): QuizPlayer | null {
 }
 
 export async function GET(req: Request) {
+  const rate = rateLimit(req, "transfer-quiz", 30, 60_000);
+  if (!rate.allowed) return rateLimitResponse(rate.retryAfter);
   const url = new URL(req.url);
-  const exclude = new Set(url.searchParams.get("exclude")?.split(",").filter(Boolean) ?? []);
+  const exclude = new Set(url.searchParams.get("exclude")?.split(",").filter(Boolean).slice(0, 100) ?? []);
 
   const pool = await buildPool();
   let candidates = exclude.size > 0 ? pool.filter((p) => !exclude.has(p.id)) : pool;
@@ -164,5 +169,6 @@ export async function GET(req: Request) {
     nationality: pick.nationality,
     position: pick.position,
     transfers: pick.transfers,
+    totalClubs: pick.totalClubs,
   });
 }
